@@ -186,11 +186,11 @@ class MDP(object):
         # if the discount is None then the algorithm is assumed to not use it
         # in its computations
         if discount is not None:
-            self.discount = float(discount)
-            assert 0.0 < self.discount <= 1.0, (
+            self.gamma = float(discount)
+            assert 0.0 < self.gamma <= 1.0, (
                 "Discount rate must be in ]0; 1]"
             )
-            if self.discount == 1:
+            if self.gamma == 1:
                 print("WARNING: check conditions of convergence. With no "
                       "discount, convergence can not be assumed.")
 
@@ -261,7 +261,7 @@ class MDP(object):
         # _bellmanOperator method. Otherwise the results will be meaningless.
         Q = _np.empty((self.A, self.S))
         for aa in range(self.A):
-            Q[aa] = self.R[aa] + self.discount * self.P[aa].dot(V)
+            Q[aa] = self.R[aa] + self.gamma * self.P[aa].dot(V)
         # Get the policy and value, for now it is being returned but...
         # Which way is better?
         # 1. Return, (policy, value)
@@ -539,7 +539,7 @@ class _LP(MDP):
         for aa in range(self.A):
             pos = (aa + 1) * self.S
             M[(pos - self.S):pos, :] = (
-                self.discount * self.P[aa] - _sp.eye(self.S, self.S))
+                    self.gamma * self.P[aa] - _sp.eye(self.S, self.S))
         M = self._cvxmat(M)
         # Using the glpk option will make this behave more like Octave
         # (Octave uses glpk) and perhaps Matlab. If solver=None (ie using the
@@ -755,14 +755,14 @@ class PolicyIteration(MDP):
             itr += 1
 
             Vprev = policy_V
-            policy_V = policy_R + self.discount * policy_P.dot(Vprev)
+            policy_V = policy_R + self.gamma * policy_P.dot(Vprev)
 
             variation = _np.absolute(policy_V - Vprev).max()
             if self.verbose:
                 _printVerbosity(itr, variation)
 
             # ensure |Vn - Vpolicy| < epsilon
-            if variation < ((1 - self.discount) / self.discount) * epsilon:
+            if variation < ((1 - self.gamma) / self.gamma) * epsilon:
                 done = True
                 if self.verbose:
                     print(_MSG_STOP_EPSILON_OPTIMAL_VALUE)
@@ -796,7 +796,7 @@ class PolicyIteration(MDP):
         Ppolicy, Rpolicy = self._computePpolicyPRpolicy()
         # V = PR + gPV  => (I-gP)V = PR  => V = inv(I-gP)* PR
         self.V = _np.linalg.solve(
-            (_sp.eye(self.S, self.S) - self.discount * Ppolicy), Rpolicy)
+            (_sp.eye(self.S, self.S) - self.gamma * Ppolicy), Rpolicy)
 
     def run(self):
         # Run the policy iteration algorithm.
@@ -906,16 +906,16 @@ class PolicyIterationModified(PolicyIteration):
 
         # computation of threshold of variation for V for an epsilon-optimal
         # policy
-        if self.discount != 1:
-            self.thresh = self.epsilon * (1 - self.discount) / self.discount
+        if self.gamma != 1:
+            self.thresh = self.epsilon * (1 - self.gamma) / self.gamma
         else:
             self.thresh = self.epsilon
 
-        if self.discount == 1:
+        if self.gamma == 1:
             self.V = _np.zeros(self.S)
         else:
             Rmin = min(R.min() for R in self.R)
-            self.V = 1 / (1 - self.discount) * Rmin * _np.ones((self.S,))
+            self.V = 1 / (1 - self.gamma) * Rmin * _np.ones((self.S,))
 
     def run(self):
         # Run the modified policy iteration algorithm.
@@ -961,7 +961,7 @@ class QLearning(MDP):
     reward : array
         Reward matrices or vectors. See the documentation for the ``MDP`` class
         for details.
-    discount : float
+    gamma : float
         Discount factor. See the documentation for the ``MDP`` class for
         details.
     n_iter : int, optional
@@ -1022,8 +1022,10 @@ class QLearning(MDP):
 
     """
 
-    def __init__(self, transitions, reward, discount, n_iter=10000,
-                 skip_check=False):
+    def __init__(self, transitions, reward, gamma,
+                 alpha=0.1, alpha_decay=0.99, alpha_min=0.1,
+                 epsilon=1.0, epsilon_min=0.1, epsilon_decay=0.99,
+                 n_iter=10000, skip_check=False):
         # Initialise a Q-learning MDP.
 
         # The following check won't be done in MDP()'s initialisation, so let's
@@ -1042,7 +1044,13 @@ class QLearning(MDP):
 
         self.R = reward
 
-        self.discount = discount
+        self.alpha = _np.clip(alpha, 0., 1.)
+        self.alpha_decay = _np.clip(alpha_decay, 0., 1.)
+        self.alpha_min = _np.clip(alpha_min, 0., 1.)
+        self.gamma = _np.clip(gamma, 0., 1.)
+        self.epsilon = _np.clip(epsilon, 0., 1.)
+        self.epsilon_decay = _np.clip(epsilon_decay, 0., 1.)
+        self.epsilon_min = _np.clip(epsilon_min, 0., 1.)
 
         # Initialisations
         self.Q = _np.zeros((self.S, self.A))
@@ -1064,13 +1072,17 @@ class QLearning(MDP):
                 s = _np.random.randint(0, self.S)
 
             # Action choice : greedy with increasing probability
-            # probability 1-(1/log(n+2)) can be changed
+            # The agent takes random actions for probability ε and greedy action for probability (1-ε).
             pn = _np.random.random()
-            if pn < (1 - (1 / _math.log(n + 2))):
+            if pn < self.epsilon:
+                a = _np.random.randint(0, self.A)
+            else:
                 # optimal_action = self.Q[s, :].max()
                 a = self.Q[s, :].argmax()
-            else:
-                a = _np.random.randint(0, self.A)
+
+            self.epsilon *= self.epsilon_decay
+            if self.epsilon < self.epsilon_min:
+                self.epsilon = self.epsilon_min
 
             # Simulating next state s_new and reward associated to <s,s_new,a>
             p_s_new = _np.random.random()
@@ -1088,11 +1100,16 @@ class QLearning(MDP):
                 except IndexError:
                     r = self.R[s]
 
+            # Q[s, a] = Q[s, a] + alpha*(R + gamma*Max[Q(s’, A)] - Q[s, a])
             # Updating the value of Q
-            # Decaying update coefficient (1/sqrt(n+2)) can be changed
-            delta = r + self.discount * self.Q[s_new, :].max() - self.Q[s, a]
-            dQ = (1 / _math.sqrt(n + 2)) * delta
+            dQ = self.alpha * (r + self.gamma * self.Q[s_new, :].max() - self.Q[s, a])
+
             self.Q[s, a] = self.Q[s, a] + dQ
+
+            self.alpha *= self.alpha_decay
+            if self.alpha < self.alpha_min:
+                self.alpha = self.alpha_min
+
 
             # current state is updated
             s = s_new
@@ -1361,13 +1378,13 @@ class ValueIteration(MDP):
             assert len(initial_value) == self.S, "The initial value must be " \
                 "a vector of length S."
             self.V = _np.array(initial_value).reshape(self.S)
-        if self.discount < 1:
+        if self.gamma < 1:
             # compute a bound for the number of iterations and update the
             # stored value of self.max_iter
             self._boundIter(epsilon)
             # computation of threshold of variation for V for an epsilon-
             # optimal policy
-            self.thresh = epsilon * (1 - self.discount) / self.discount
+            self.thresh = epsilon * (1 - self.gamma) / self.gamma
         else:  # discount == 1
             # threshold of variation for V for an epsilon-optimal policy
             self.thresh = epsilon
@@ -1412,8 +1429,8 @@ class ValueIteration(MDP):
         null, value = self._bellmanOperator()
         # p 201, Proposition 6.6.5
         span = _util.getSpan(value - Vprev)
-        max_iter = (_math.log((epsilon * (1 - self.discount) / self.discount) /
-                    span) / _math.log(self.discount * k))
+        max_iter = (_math.log((epsilon * (1 - self.gamma) / self.gamma) /
+                              span) / _math.log(self.gamma * k))
         # self.V = Vprev
 
         self.max_iter = int(_math.ceil(max_iter))
@@ -1529,13 +1546,13 @@ class ValueIterationGS(ValueIteration):
                     self.V = _np.array(initial_value)
                 except:
                     raise
-        if self.discount < 1:
+        if self.gamma < 1:
             # compute a bound for the number of iterations and update the
             # stored value of self.max_iter
             self._boundIter(epsilon)
             # computation of threshold of variation for V for an epsilon-
             # optimal policy
-            self.thresh = epsilon * (1 - self.discount) / self.discount
+            self.thresh = epsilon * (1 - self.gamma) / self.gamma
         else:  # discount == 1
             # threshold of variation for V for an epsilon-optimal policy
             self.thresh = epsilon
@@ -1552,7 +1569,7 @@ class ValueIterationGS(ValueIteration):
 
             for s in range(self.S):
                 Q = [float(self.R[a][s] +
-                           self.discount * self.P[a][s, :].dot(self.V))
+                           self.gamma * self.P[a][s, :].dot(self.V))
                      for a in range(self.A)]
 
                 self.V[s] = max(Q)
@@ -1576,7 +1593,7 @@ class ValueIterationGS(ValueIteration):
             Q = _np.zeros(self.A)
             for a in range(self.A):
                 Q[a] = (self.R[a][s] +
-                        self.discount * self.P[a][s, :].dot(self.V))
+                        self.gamma * self.P[a][s, :].dot(self.V))
 
             self.V[s] = Q.max()
             self.policy.append(int(Q.argmax()))

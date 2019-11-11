@@ -11,13 +11,15 @@ import sqlite3
 from numpy import arange
 from numpy.random import permutation, random, randint
 from scipy.sparse import dok_matrix
+from scipy._lib.six import xrange
 
-from mdp import ValueIteration
-from mdpsql import ValueIteration as ValueIterationSQL
+from mdptoolbox.mdp import ValueIteration
+from experimental.mdpsql import ValueIteration as ValueIterationSQL
+
 
 def setup(S, A):
     P_sparse = [None] * A
-    R_sparse = 2*random(S) - 1
+    R_sparse = 2 * random(S) - 1
     DB_sql = "MDP-big.db" % (S, A)
     if os.path.exists(DB_sql):
         os.remove(DB_sql)
@@ -28,7 +30,7 @@ def setup(S, A):
             INSERT INTO info VALUES('states', %s);
             INSERT INTO info VALUES('actions', %s);''' % (S, A)
         c.executescript(cmd)
-        for a in range(1, A+1):
+        for a in range(1, A + 1):
             a_sparse = a - 1
             PP_sparse = dok_matrix((S, S))
             cmd = '''
@@ -38,10 +40,10 @@ def setup(S, A):
             c.executescript(cmd)
             cmd = "INSERT INTO reward%s(val) VALUES(?)" % a
             c.executemany(cmd, zip(R_sparse.tolist()))
-            for s in xrange(1, S+1):
+            for s in xrange(1, S + 1):
                 s_sparse = s - 1
                 n = randint(1, 10)
-                col = (permutation(arange(1,S+1))[0:n]).tolist()
+                col = (permutation(arange(1, S + 1))[0:n]).tolist()
                 val = random(n)
                 val = (val / val.sum()).tolist()
                 PP_sparse[s_sparse, col - 1] = val
@@ -49,8 +51,9 @@ def setup(S, A):
                 c.executemany(cmd, zip([s] * n, col, val))
             cmd = "CREATE UNIQUE INDEX Pidx%s ON transition%s (row, col);" % (a, a)
             c.execute(cmd)
-        P_sparse[a_sparse] = PP_sparse.tocsr()   
+        P_sparse[a_sparse] = PP_sparse.tocsr()
     return P_sparse, R_sparse, DB_sql
+
 
 if __name__ == "__main__":
     P_sparse, R_sparse, DB_sql = setup(100000000, 3)

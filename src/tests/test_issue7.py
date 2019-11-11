@@ -5,6 +5,7 @@ import scipy.sparse as sp
 
 import mdptoolbox
 
+
 class BaseTestIssue7(object):
     discount = 0.9
     P = [None] * 2

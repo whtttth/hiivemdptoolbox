@@ -13,12 +13,13 @@ from mdptoolbox import mdp
 
 from .utils import BaseTestMDP, assert_sequence_almost_equal
 
+
 class TestPolicyIterationModified(BaseTestMDP):
     def test_small(self):
         pim = mdp.PolicyIterationModified(self.small_P, self.small_R, 0.9)
         pim.run()
         assert_sequence_almost_equal(pim.V,
-                                    (41.8656419239403, 35.4702797722819))
+                                     (41.8656419239403, 35.4702797722819))
         assert_equal(pim.policy, (1, 0))
 
     def test_small_undiscounted(self):

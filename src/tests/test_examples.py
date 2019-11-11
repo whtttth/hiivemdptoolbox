@@ -12,11 +12,13 @@ import scipy.sparse as sp
 
 import mdptoolbox.example
 
+
 def assert_equal_numpy_spacing(A, B):
     A = np.array(A)
     B = np.array(B)
     x = np.amax(np.maximum(np.abs(A), np.abs(B)))
     assert_true((np.abs(A - B) <= np.spacing(x)).all())
+
 
 ## example.forest
 
@@ -52,28 +54,36 @@ class TestExampleForest(object):
         assert_true((R == self.R).all())
         assert_equal(R.shape, self.R.shape)
 
+
 def test_example_forest_dense_check():
     P, R = mdptoolbox.example.forest(10, 5, 3, 0.2)
     assert_is_none(mdptoolbox.util.check(P, R))
+
 
 def test_example_forest_sparse_check():
     P, R = mdptoolbox.example.forest(S=30, is_sparse=True)
     assert_is_none(mdptoolbox.util.check(P, R))
 
+
 def test_example_forest_S_raise():
     assert_raises(AssertionError, mdptoolbox.example.forest, S=0)
+
 
 def test_example_forest_r1_raise():
     assert_raises(AssertionError, mdptoolbox.example.forest, r1=0)
 
+
 def test_example_forest_r1_raise():
     assert_raises(AssertionError, mdptoolbox.example.forest, r2=0)
+
 
 def test_example_forest_p_low_raise():
     assert_raises(AssertionError, mdptoolbox.example.forest, p=-1)
 
+
 def test_example_forest_p_high_raise():
     assert_raises(AssertionError, mdptoolbox.example.forest, p=1.1)
+
 
 ## example.rand
 
@@ -84,9 +94,9 @@ class TestExampleRand(object):
         [[[0.28109922699468015, 0.4285572503528079, 0.2903435226525119],
           [0.0, 1.0, 0.0],
           [0.0, 1.0, 0.0]],
-        [[0.4656280088928742, 0.21500769329533384, 0.31936429781179193],
-         [0.0, 0.0, 1.0],
-         [0.19806726878845474, 0.8019327312115453, 0.0]]])
+         [[0.4656280088928742, 0.21500769329533384, 0.31936429781179193],
+          [0.0, 0.0, 1.0],
+          [0.19806726878845474, 0.8019327312115453, 0.0]]])
     R = np.array(
         [[[0.7835460015641595, 0.9273255210020586, -0.2331169623484446],
           [0.0, -0.7192984391747097, 0.0],

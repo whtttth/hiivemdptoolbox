@@ -57,6 +57,7 @@ STATES = POPULATION_CLASSES * FIRE_CLASSES
 # The number of actions
 ACTIONS = 4
 
+
 def convertStateToIndex(population, fire):
     """Convert state parameters to transition probability matrix index.
     
@@ -75,10 +76,11 @@ def convertStateToIndex(population, fire):
     
     """
     assert 0 <= population < POPULATION_CLASSES, "'population' must be in " \
-        "(0, 1...%s)" % str(POPULATION_CLASSES - 1)
+                                                 "(0, 1...%s)" % str(POPULATION_CLASSES - 1)
     assert 0 <= fire < FIRE_CLASSES, "'fire' must be in " \
-        "(0, 1...%s) " % str(FIRE_CLASSES - 1)
-    return(population * FIRE_CLASSES + fire)
+                                     "(0, 1...%s) " % str(FIRE_CLASSES - 1)
+    return (population * FIRE_CLASSES + fire)
+
 
 def convertIndexToState(index):
     """Convert transition probability matrix index to state parameters.
@@ -99,7 +101,8 @@ def convertIndexToState(index):
     assert index < STATES
     population = index // FIRE_CLASSES
     fire = index % FIRE_CLASSES
-    return(population, fire)
+    return (population, fire)
+
 
 def getHabitatSuitability(years):
     """The habitat suitability of a patch relatve to the time since last fire.
@@ -121,11 +124,12 @@ def getHabitatSuitability(years):
     """
     assert years >= 0, "'years' must be a positive number"
     if years <= 5:
-        return(0.2 * years)
+        return (0.2 * years)
     elif 5 <= years <= 10:
-        return(-0.1 * years + 1.5)
+        return (-0.1 * years + 1.5)
     else:
-        return(0.5)
+        return (0.5)
+
 
 def getTransitionProbabilities(s, x, F, a):
     """Calculate the transition probabilities for the given state and action.
@@ -152,7 +156,7 @@ def getTransitionProbabilities(s, x, F, a):
     assert 0 <= x < POPULATION_CLASSES
     assert 0 <= F < FIRE_CLASSES
     assert 0 <= s <= 1
-    assert 0 <= a < ACTIONS 
+    assert 0 <= a < ACTIONS
     prob = np.zeros((STATES,))
     r = getHabitatSuitability(F)
     # Efect of action on time in years since fire.
@@ -191,9 +195,9 @@ def getTransitionProbabilities(s, x, F, a):
             pass
         # Demographic model probabilities
         new_state = convertStateToIndex(x_1, F)
-        prob[new_state] = 1 - (1 - s) * (1 - r) # abundance stays the same
+        prob[new_state] = 1 - (1 - s) * (1 - r)  # abundance stays the same
         new_state = convertStateToIndex(x_2, F)
-        prob[new_state] = (1 - s) * (1 - r) # abundance goes down
+        prob[new_state] = (1 - s) * (1 - r)  # abundance goes down
     else:
         # Population abundance class can stay the same, transition up, or
         # transition down.
@@ -215,15 +219,16 @@ def getTransitionProbabilities(s, x, F, a):
             pass
         # Demographic model probabilities
         new_state = convertStateToIndex(x_1, F)
-        prob[new_state] = s # abundance stays the same
+        prob[new_state] = s  # abundance stays the same
         new_state = convertStateToIndex(x_2, F)
-        prob[new_state] = (1 - s) * r # abundance goes up
+        prob[new_state] = (1 - s) * r  # abundance goes up
         new_state = convertStateToIndex(x_3, F)
         # In the case when x_3 = 0 before the effect of an action is applied,
         # then the final state is going to be the same as that for x_1, so we
         # need to add the probabilities together.
-        prob[new_state] += (1 - s) * (1 - r) # abundance goes down
-    return(prob)
+        prob[new_state] += (1 - s) * (1 - r)  # abundance goes down
+    return (prob)
+
 
 def getTransitionAndRewardArrays(s):
     """Generate the fire management transition and reward matrices.
@@ -263,7 +268,8 @@ def getTransitionAndRewardArrays(s):
         for a in range(ACTIONS):
             # Assign the transition probabilities for this state, action pair
             P[a][idx] = getTransitionProbabilities(s, x, F, a)
-    return(P, R)
+    return (P, R)
+
 
 def solveMDP():
     """Solve the problem as a finite horizon Markov decision process.
@@ -284,7 +290,8 @@ def solveMDP():
     P, R = getTransitionAndRewardArrays(0.5)
     sdp = mdp.FiniteHorizon(P, R, 0.96, 50)
     sdp.run()
-    return(sdp)
+    return (sdp)
+
 
 def printPolicy(policy):
     """Print out a policy vector as a table to console
@@ -307,6 +314,7 @@ def printPolicy(policy):
     print("    " + "---" * FIRE_CLASSES)
     for x in range(POPULATION_CLASSES):
         print(" %2d|" % x + " ".join("%2d" % p[x, f] for f in range_F))
+
 
 def simulateTransition(x, s, r, fire):
     """Simulate a state transition.
@@ -332,7 +340,7 @@ def simulateTransition(x, s, r, fire):
     
     """
     assert 0 <= x < POPULATION_CLASSES, "'x' must be in " \
-        "{0, 1...%s}" % POPULATION_CLASSES - 1
+                                        "{0, 1...%s}" % POPULATION_CLASSES - 1
     assert 0 <= s <= 1, "'s' must be in [0; 1]"
     assert 0 <= r <= 1, "'r' must be in [0; 1]"
     assert fire in (True, False), "'fire' must be a boolean value"
@@ -342,41 +350,44 @@ def simulateTransition(x, s, r, fire):
     elif x == POPULATION_CLASSES - 1:
         if random.random() <= 1 - (1 - s) * (1 - r):
             pass
-        else: # with probability (1 - s)(1 - r)
+        else:  # with probability (1 - s)(1 - r)
             x -= 1
     else:
         if random.random() <= s:
             pass
         else:
-            if random.random() <= r: # with probability (1 - s)r
+            if random.random() <= r:  # with probability (1 - s)r
                 x += 1
-            else: # with probability (1 - s)(1 - r)
+            else:  # with probability (1 - s)(1 - r)
                 x -= 1
     # Add the effect of a fire, making sure x doesn't go to -1
     if fire and (x > 0):
         x -= 1
-    return(x)
+    return (x)
+
 
 def _runTests():
-    #Run tests on the modules functions.
+    # Run tests on the modules functions.
     assert getHabitatSuitability(0) == 0
     assert getHabitatSuitability(2) == 0.4
     assert getHabitatSuitability(5) == 1
     assert getHabitatSuitability(8) == 0.7
     assert getHabitatSuitability(10) == 0.5
     assert getHabitatSuitability(15) == 0.5
-    assert convertIndexToState(STATES-1) == (POPULATION_CLASSES - 1, 
-                                       FIRE_CLASSES - 1)
-    assert convertIndexToState(STATES-2) == (POPULATION_CLASSES -1, 
-                                       FIRE_CLASSES - 2)
+    assert convertIndexToState(STATES - 1) == (POPULATION_CLASSES - 1,
+                                               FIRE_CLASSES - 1)
+    assert convertIndexToState(STATES - 2) == (POPULATION_CLASSES - 1,
+                                               FIRE_CLASSES - 2)
     assert convertIndexToState(0) == (0, 0)
     for idx in range(STATES):
         s1, s2 = convertIndexToState(idx)
         assert convertStateToIndex(s1, s2) == idx
     print("Tests complete.")
 
+
 if __name__ == "__main__":
     import sys
+
     try:
         argv = sys.argv[1]
     except IndexError:

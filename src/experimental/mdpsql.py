@@ -7,6 +7,10 @@ from time import time
 
 from numpy import arange
 from numpy.random import permutation, random, randint
+from scipy._lib.six import xrange
+
+from mdptoolbox.error import StandardError
+
 
 def exampleForest(S=3, r1=4, r2=2, p=0.1):
     db = "MDP-forest-%s.db" % S
@@ -28,7 +32,7 @@ def exampleForest(S=3, r1=4, r2=2, p=0.1):
         c.executescript(cmd)
         rows = range(1, S + 1) * 2
         cols = [1] * S + range(2, S + 1) + [S]
-        vals = [p] * S + [1-p] * S
+        vals = [p] * S + [1 - p] * S
         cmd = "INSERT INTO transition1 VALUES(?, ?, ?)"
         c.executemany(cmd, zip(rows, cols, vals))
         rows = range(1, S + 1)
@@ -47,6 +51,7 @@ def exampleForest(S=3, r1=4, r2=2, p=0.1):
     # return the databases name
     return db
 
+
 def exampleRand(S, A):
     """WARNING: This will delete a database with the same name as 'db'."""
     db = "MDP-%sx%s.db" % (S, A)
@@ -60,7 +65,7 @@ def exampleRand(S, A):
             INSERT INTO info VALUES('states', %s);
             INSERT INTO info VALUES('actions', %s);''' % (S, A)
         c.executescript(cmd)
-        for a in range(1, A+1):
+        for a in range(1, A + 1):
             cmd = '''
                 CREATE TABLE transition%s (row INTEGER, col INTEGER, prob REAL);
                 CREATE TABLE reward%s (state INTEGER PRIMARY KEY ASC, val REAL);
@@ -68,16 +73,16 @@ def exampleRand(S, A):
             c.executescript(cmd)
             cmd = "INSERT INTO reward%s(val) VALUES(?)" % a
             c.executemany(cmd, zip(random(S).tolist()))
-            for s in xrange(1, S+1):
+            for s in xrange(1, S + 1):
                 # to be usefully represented as a sparse matrix, the number of
                 # nonzero entries should be less than 1/3 of dimesion of the
                 # matrix, so S/3
-                n = randint(1, S//3)
+                n = randint(1, S // 3)
                 # timeit [90894] * 20330
                 # ==> 10000 loops, best of 3: 141 us per loop
                 # timeit (90894*np.ones(20330, dtype=int)).tolist()
                 # ==> 1000 loops, best of 3: 548 us per loop
-                col = (permutation(arange(1,S+1))[0:n]).tolist()
+                col = (permutation(arange(1, S + 1))[0:n]).tolist()
                 val = random(n)
                 val = (val / val.sum()).tolist()
                 cmd = "INSERT INTO transition%s VALUES(?, ?, ?)" % a
@@ -90,7 +95,7 @@ def exampleRand(S, A):
 
 class MDP(object):
     """"""
-    
+
     def __init__(self, db, discount, epsilon, max_iter, initial_V=0):
         self.discount = discount
         self.epsilon = epsilon
@@ -116,7 +121,7 @@ class MDP(object):
         self._checkSquareStochastic()
         self._initQ()
         self._initResults(initial_V)
-    
+
     def _checkSquareStochastic(self):
         # check that the columns of the transition matrices sum to one
         for a in range(1, self.A + 1):
@@ -124,8 +129,8 @@ class MDP(object):
             cmd = "SELECT SUM(s) " \
                   "  FROM (" \
                   "       SELECT ABS(SUM(prob)-1)<10e-12 AS s" \
-                  "         FROM "+P+"" \
-                  "        GROUP BY row);"
+                  "         FROM " + P + "" \
+                                         "        GROUP BY row);"
             self._cur.execute(cmd)
             try:
                 if self._cur.fetchone()[0] != self.S:
@@ -133,7 +138,7 @@ class MDP(object):
                                      "is not stochastic." % a)
             except TypeError:
                 raise StandardError("The check stochastic query for a=%s "
-                                    "failed." % a)
+                            "failed." % a)
             cmd = "SELECT MAX(row) FROM " + P
             self._cur.execute(cmd)
             row_max = self._cur.fetchone()[0]
@@ -146,7 +151,7 @@ class MDP(object):
             if int(col_max) > row_max:
                 raise ValueError("The transition matrix for action %a id "
                                  "not square: col_max = %s" % (a, col_max))
-    
+
     def _initQ(self):
         self._delQ()
         self._cur.execute("CREATE TABLE Q (state INTEGER, action INTEGER, "
@@ -159,12 +164,12 @@ class MDP(object):
             self._cur.executemany(cmd, zip(state, action, value))
         self._cur.execute("CREATE UNIQUE INDEX Qidx ON Q (state, action);")
         self._conn.commit()
-    
+
     def _delQ(self):
         self._cur.executescript('''
             DROP TABLE IF EXISTS Q;
             DROP INDEX IF EXISTS Qidx;''')
-    
+
     def _initResults(self, initial_V):
         self._delResults()
         self._cur.executescript('''
@@ -178,7 +183,7 @@ class MDP(object):
         self._cur.executemany(cmd2, values)
         self._cur.executemany(cmd3, values)
         del values
-        if initial_V==0:
+        if initial_V == 0:
             self._cur.executemany(cmd1, zip([0] * self.S))
         else:
             try:
@@ -187,13 +192,13 @@ class MDP(object):
                 raise ValueError("V is of unsupported type, use a list or "
                                  "tuple.")
         self._conn.commit()
-    
+
     def _delResults(self):
         self._cur.executescript('''
             DROP TABLE IF EXISTS policy;
             DROP TABLE IF EXISTS V;
             DROP TABLE IF EXISTS Vprev;''')
-    
+
     def __del__(self):
         self._delQ()
         self._cur.executescript('''
@@ -201,32 +206,33 @@ class MDP(object):
             VACUUM;''')
         self._cur.close()
         self._conn.close()
-    
+
     def _bellmanOperator(self):
         g = str(self.discount)
         for a in range(1, self.A + 1):
             P = "transition%s" % a
             R = "reward%s" % a
             cmd = "" \
-"UPDATE Q " \
-"   SET value = (" \
-"       SELECT value "\
-"              FROM (" \
-"                   SELECT R.state AS state, (R.val + B.val) AS value " \
-"                     FROM "+R+" AS R, (" \
-"                          SELECT P.row, "+g+"*SUM(P.prob * V.value) AS val" \
-"                            FROM "+P+" AS P, V " \
-"                           WHERE V.state = P.col " \
-"                           GROUP BY P.row" \
-"                          ) AS B " \
-"                    WHERE R.state = B.row" \
-"                   ) AS C "\
-"        WHERE Q.state = C.state) "\
-" WHERE action = "+str(a)+";"
+                  "UPDATE Q " \
+                  "   SET value = (" \
+                  "       SELECT value " \
+                  "              FROM (" \
+                  "                   SELECT R.state AS state, (R.val + B.val) AS value " \
+                  "                     FROM " + R + " AS R, (" \
+                                                     "                          SELECT P.row, " + g + "*SUM(P.prob * V.value) AS val" \
+                                                                                                      "                            FROM " + P + " AS P, V " \
+                                                                                                                                                "                           WHERE V.state = P.col " \
+                                                                                                                                                "                           GROUP BY P.row" \
+                                                                                                                                                "                          ) AS B " \
+                                                                                                                                                "                    WHERE R.state = B.row" \
+                                                                                                                                                "                   ) AS C " \
+                                                                                                                                                "        WHERE Q.state = C.state) " \
+                                                                                                                                                " WHERE action = " + str(
+                a) + ";"
             self._cur.execute(cmd)
         self._conn.commit()
         self._calculateValue()
-    
+
     def _calculatePolicy(self):
         """This implements argmax() over the actions of Q."""
         cmd = '''
@@ -240,7 +246,7 @@ class MDP(object):
                        GROUP BY state);'''
         self._cur.execute(cmd)
         self._conn.commit()
-    
+
     def _calculateValue(self):
         """This is max() over the actions of Q."""
         cmd = '''
@@ -252,7 +258,7 @@ class MDP(object):
                       GROUP BY state);'''
         self._cur.execute(cmd)
         self._conn.commit()
-    
+
     def _getSpan(self):
         cmd = '''
               SELECT (MAX(A.value) - MIN(A.value))
@@ -264,7 +270,7 @@ class MDP(object):
         span = self._cur.fetchone()
         if span is not None:
             return span[0]
-    
+
     def getPolicyValue(self):
         """Get the policy and value vectors."""
         self._cur.execute("SELECT action FROM policy")
@@ -274,43 +280,44 @@ class MDP(object):
         r = self._cur.fetchall()
         value = [x[0] for x in r]
         return policy, value
-    
+
     def _randomQ(self):
-        for a in range(1,self.A+1):
-            state = xrange(1,self.S+1)
+        for a in range(1, self.A + 1):
+            state = xrange(1, self.S + 1)
             action = [a] * self.S
             value = random(self.S).tolist()
             cmd = "INSERT INTO Q VALUES(?, ?, ?)"
             self._cur.executemany(cmd, zip(state, action, value))
         self._conn.commit()
 
+
 class ValueIteration(MDP):
     """"""
-    
+
     def __init__(self, db, discount, epsilon=0.01, max_iter=1000,
                  initial_value=0):
         MDP.__init__(self, db, discount, epsilon, max_iter, initial_value)
-        
+
         if self.discount < 1:
             self.thresh = epsilon * (1 - self.discount) / self.discount
         else:
             self.thresh = epsilon
-        
+
         self._iterate()
-    
+
     def __del__(self):
         MDP.__del__(self)
-    
+
     def _iterate(self):
         self.time = time()
         done = False
         while not done:
             self.itr += 1
-            
+
             self._copyPreviousValue()
             self._bellmanOperator()
             variation = self._getSpan()
-            
+
             if variation < self.thresh:
                 done = True
             elif (self.itr == self.max_iter):
@@ -319,7 +326,7 @@ class ValueIteration(MDP):
         self._calculatePolicy()
         # calculate the time taken to finish
         self.time = time() - self.time
-    
+
     def _copyPreviousValue(self):
         cmd = '''
               UPDATE Vprev

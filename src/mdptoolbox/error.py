@@ -20,6 +20,7 @@ StochasticError
 
 """
 
+
 # Copyright (c) 2015 Steven A. W. Cordwell
 # Copyright (c) 2009 INRA
 #
@@ -59,6 +60,16 @@ class Error(Exception):
     def __str__(self):
         return repr(self.message)
 
+
+class StandardError(Error):
+    """Class for standard error."""
+
+    def __init__(self, msg):
+        Error.__init__(self)
+        self.message += msg
+        self.args = tuple(msg)
+
+
 class InvalidError(Error):
     """Class for invalid definitions of a MDP."""
 
@@ -66,6 +77,7 @@ class InvalidError(Error):
         Error.__init__(self)
         self.message += msg
         self.args = tuple(msg)
+
 
 class NonNegativeError(Error):
     """Class for transition matrix stochastic errors"""
@@ -79,6 +91,7 @@ class NonNegativeError(Error):
         self.message += msg
         self.args = tuple(msg)
 
+
 class SquareError(Error):
     """Class for transition matrix square errors"""
 
@@ -90,6 +103,7 @@ class SquareError(Error):
         Error.__init__(self)
         self.message += msg
         self.args = tuple(msg)
+
 
 class StochasticError(Error):
     """Class for transition matrix stochastic errors"""

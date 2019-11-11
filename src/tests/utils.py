@@ -11,11 +11,14 @@ import scipy as sp
 
 import mdptoolbox.example
 
+
 class BaseTestMDP(object):
     small_P, small_R = mdptoolbox.example.small()
 
+
 def assert_sequence_almost_equal(a, b, spacing=10e-12):
     assert_true(all(abs(a[k] - b[k]) < spacing for k in range(len(a))))
+
 
 STATES = 10
 ACTIONS = 3

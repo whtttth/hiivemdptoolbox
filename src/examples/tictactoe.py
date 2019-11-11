@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import cPickle as pickle
+import pickle
 
 import numpy as np
 from scipy.sparse import dok_matrix
