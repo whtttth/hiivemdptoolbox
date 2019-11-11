@@ -802,13 +802,15 @@ class PolicyIteration(MDP):
         self.V = policy_V
         return policy_V, Rpolicy, None
 
-    def _build_run_stat(self, error, policy_R, policy_V, policy_next):
+    def _build_run_stat(self, s, a, r, p, v, error):
         return {
-            'Reward': policy_R,
+            'State': None,
+            'Action': None,
+            'Reward': r,
             'Error': error,
             'Time': _time.time() - self.time,
-            'Value': policy_V.copy(),
-            'Policy': policy_next.copy()
+            'Value': v.copy(),
+            'Policy': p.copy()
         }
 
     def run(self):
@@ -829,17 +831,17 @@ class PolicyIteration(MDP):
             del null
             # calculate in how many places does the old policy disagree with
             # the new policy
-            n_different = (policy_next != self.policy).sum()
+            nd = (policy_next != self.policy).sum()
             # if verbose then continue printing a table
             if self.verbose:
-                _printVerbosity(self.iter, n_different)
+                _printVerbosity(self.iter, nd)
             # Once the policy is unchanging of the maximum number of
             # of iterations has been reached then stop
 
             # Error, rewards, and time for every iteration and number of PI steps which might be specific to my setup
-            self.run_stats.append(self._build_run_stat(n_different, policy_R, policy_V, policy_next))
+            self.run_stats.append(self._build_run_stat(s=None, a=None, r=policy_R, p=policy_next, v=policy_V, error=nd))
 
-            if n_different == 0:
+            if nd == 0:
                 if self.verbose:
                     print(_MSG_STOP_UNCHANGING_POLICY)
                 break
@@ -851,6 +853,7 @@ class PolicyIteration(MDP):
                 self.policy = policy_next
 
         self._endRun()
+        return self.run_stats
 
 
 class PolicyIterationModified(PolicyIteration):
@@ -1145,7 +1148,7 @@ class QLearning(MDP):
             Alpha decay and min ?
             And alpha and epsilon at each iteration?
             """
-            self.run_stats.append(self._build_run_stat(a, error, p, r, s, v))
+            self.run_stats.append(self._build_run_stat(s=s, a=a, r=r, p=p, v=v, error=error))
 
             # current state is updated
             s = s_new
@@ -1159,6 +1162,7 @@ class QLearning(MDP):
                 self.epsilon = self.epsilon_min
 
         self._endRun()
+        return self.run_stats
 
     def _build_run_stat(self, a, error, p, r, s, v):
         run_stat = {
@@ -1366,8 +1370,8 @@ class ValueIteration(MDP):
     Examples
     --------
     >>> import hiive.mdptoolbox, hiive.mdptoolbox.example
-    >>> P, R = mdptoolbox.example.forest()
-    >>> vi = mdptoolbox.mdp.ValueIteration(P, R, 0.96)
+    >>> P, R = hiive.mdptoolbox.example.forest()
+    >>> vi = hiive.mdptoolbox.mdp.ValueIteration(P, R, 0.96)
     >>> vi.verbose
     False
     >>> vi.run()
@@ -1383,7 +1387,7 @@ class ValueIteration(MDP):
     >>> import numpy as np
     >>> P = np.array([[[0.5, 0.5],[0.8, 0.2]],[[0, 1],[0.1, 0.9]]])
     >>> R = np.array([[5, 10], [-1, 2]])
-    >>> vi = mdptoolbox.mdp.ValueIteration(P, R, 0.9)
+    >>> vi = hiive.mdptoolbox.mdp.ValueIteration(P, R, 0.9)
     >>> vi.run()
     >>> expected = (40.048625392716815, 33.65371175967546)
     >>> all(expected[k] - vi.V[k] < 1e-12 for k in range(len(expected)))
@@ -1416,7 +1420,7 @@ class ValueIteration(MDP):
 
         MDP.__init__(self, transitions, reward, discount, epsilon, max_iter,
                      skip_check=skip_check)
-
+        self.run_stats = None
         # initialization of optional arguments
         if initial_value == 0:
             self.V = _np.zeros(self.S)
@@ -1496,12 +1500,14 @@ class ValueIteration(MDP):
             # The values, based on Q. For the function "max()": the option
             # "axis" means the axis along which to operate. In this case it
             # finds the maximum of the the rows. (Operates along the columns?)
-            variation = _util.getSpan(self.V - Vprev)
+            var = _util.getSpan(self.V - Vprev)
+
+            self.run_stats.append(self._build_run_stat(s=None, a=None, r=self.R, p=self.policy, v=self.V, error=var))
 
             if self.verbose:
-                _printVerbosity(self.iter, variation)
+                _printVerbosity(self.iter, var)
 
-            if variation < self.thresh:
+            if var < self.thresh:
                 if self.verbose:
                     print(_MSG_STOP_EPSILON_OPTIMAL_POLICY)
                 break
@@ -1511,7 +1517,20 @@ class ValueIteration(MDP):
                 break
 
         self._endRun()
+        return self.run_stats
 
+    def _build_run_stat(self, s, a, r, p, v, error):
+        run_stat = {
+            'State': None,
+            'Action': None,
+            'Reward': r,
+            'Error': error,
+            'Time': _time.time() - self.time,
+            'Epsilon': self.epsilon,
+            'Value': v.copy(),
+            'Policy': p.copy()
+        }
+        return run_stat
 
 class ValueIterationGS(ValueIteration):
 
