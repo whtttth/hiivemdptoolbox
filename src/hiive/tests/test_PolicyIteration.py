@@ -8,7 +8,7 @@ Created on Sat Aug 24 15:00:29 2013
 import numpy as np
 import scipy.sparse as sp
 
-import mdptoolbox
+import hiive.mdptoolbox
 
 from .utils import SMALLNUM, P_forest, R_forest, P_small, R_small, P_sparse, \
     P_forest_sparse, R_forest_sparse, \

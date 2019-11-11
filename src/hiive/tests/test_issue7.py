@@ -3,7 +3,7 @@
 import numpy as np
 import scipy.sparse as sp
 
-import mdptoolbox
+import hiive.mdptoolbox
 
 
 class BaseTestIssue7(object):
@@ -53,7 +53,7 @@ class BaseTestIssue7(object):
 
     def dense_P_dense_R(self, algorithm):
         sdp = algorithm(self.P, self.R, self.discount)
-        if algorithm != mdptoolbox.mdp.QLearning:
+        if algorithm != hiive.mdptoolbox.mdp.QLearning:
             assert (sdp.R[0] == self.computed_R[0]).all()
             assert (sdp.R[1] == self.computed_R[1]).all()
         assert not sp.issparse(sdp.P[0])
@@ -61,13 +61,13 @@ class BaseTestIssue7(object):
         assert not sp.issparse(sdp.R[0])
         assert not sp.issparse(sdp.R[1])
         sdp.run()
-        if algorithm != mdptoolbox.mdp.QLearning:
+        if algorithm != hiive.mdptoolbox.mdp.QLearning:
             assert sdp.policy == self.policy, sdp.policy
 
     def sparse_P_dense_R(self, algorithm):
         P = list(map(sp.csr_matrix, self.P))
         sdp = algorithm(P, self.R, self.discount)
-        if algorithm != mdptoolbox.mdp.QLearning:
+        if algorithm != hiive.mdptoolbox.mdp.QLearning:
             assert (sdp.R[0] == self.computed_R[0]).all()
             assert (sdp.R[1] == self.computed_R[1]).all()
         assert sp.issparse(sdp.P[0])
@@ -75,13 +75,13 @@ class BaseTestIssue7(object):
         assert not sp.issparse(sdp.R[0])
         assert not sp.issparse(sdp.R[1])
         sdp.run()
-        if algorithm != mdptoolbox.mdp.QLearning:
+        if algorithm != hiive.mdptoolbox.mdp.QLearning:
             assert sdp.policy == self.policy, sdp.policy
 
     def dense_P_sparse_R(self, algorithm):
         R = list(map(sp.csr_matrix, self.R))
         sdp = algorithm(self.P, R, self.discount)
-        if algorithm != mdptoolbox.mdp.QLearning:
+        if algorithm != hiive.mdptoolbox.mdp.QLearning:
             assert (sdp.R[0] == self.computed_R[0]).all()
             assert (sdp.R[1] == self.computed_R[1]).all()
         assert not sp.issparse(sdp.P[0])
@@ -89,14 +89,14 @@ class BaseTestIssue7(object):
         #assert sp.issparse(sdp.R[0])
         #assert sp.issparse(sdp.R[1])
         sdp.run()
-        if algorithm != mdptoolbox.mdp.QLearning:
+        if algorithm != hiive.mdptoolbox.mdp.QLearning:
             assert sdp.policy == self.policy, sdp.policy
 
     def sparse_P_sparse_R(self, algorithm):
         P = list(map(sp.csr_matrix, self.P))
         R = list(map(sp.csr_matrix, self.R))
         sdp = algorithm(P, R, self.discount)
-        if algorithm != mdptoolbox.mdp.QLearning:
+        if algorithm != hiive.mdptoolbox.mdp.QLearning:
             assert (sdp.R[0] == self.computed_R[0]).all()
             assert (sdp.R[1] == self.computed_R[1]).all()
         assert sp.issparse(sdp.P[0])
@@ -104,7 +104,7 @@ class BaseTestIssue7(object):
         #assert sp.issparse(sdp.R[0])
         #assert sp.issparse(sdp.R[1])
         sdp.run()
-        if algorithm != mdptoolbox.mdp.QLearning:
+        if algorithm != hiive.mdptoolbox.mdp.QLearning:
             assert sdp.policy == self.policy, sdp.policy
 
 # Needs some work before can use, need to pass horizon
@@ -139,83 +139,83 @@ class BaseTestIssue7(object):
 class TestPolicyIteration(BaseTestIssue7):
 
     def test_dense_P_dense_R(self):
-        self.dense_P_dense_R(mdptoolbox.mdp.PolicyIteration)
+        self.dense_P_dense_R(hiive.mdptoolbox.mdp.PolicyIteration)
 
     def test_sparse_P_dense_R(self):
-        self.sparse_P_dense_R(mdptoolbox.mdp.PolicyIteration)
+        self.sparse_P_dense_R(hiive.mdptoolbox.mdp.PolicyIteration)
 
     def test_dense_P_sparse_R(self):
-        self.dense_P_sparse_R(mdptoolbox.mdp.PolicyIteration)
+        self.dense_P_sparse_R(hiive.mdptoolbox.mdp.PolicyIteration)
 
     def test_sparse_P_sparse_R(self):
-       self.sparse_P_sparse_R(mdptoolbox.mdp.PolicyIteration)
+       self.sparse_P_sparse_R(hiive.mdptoolbox.mdp.PolicyIteration)
 
 class TestPolicyIterationModified(BaseTestIssue7):
 
     def test_dense_P_dense_R(self):
-        self.dense_P_dense_R(mdptoolbox.mdp.PolicyIterationModified)
+        self.dense_P_dense_R(hiive.mdptoolbox.mdp.PolicyIterationModified)
 
     def test_sparse_P_dense_R(self):
-        self.sparse_P_dense_R(mdptoolbox.mdp.PolicyIterationModified)
+        self.sparse_P_dense_R(hiive.mdptoolbox.mdp.PolicyIterationModified)
 
     def test_dense_P_sparse_R(self):
-        self.dense_P_sparse_R(mdptoolbox.mdp.PolicyIterationModified)
+        self.dense_P_sparse_R(hiive.mdptoolbox.mdp.PolicyIterationModified)
 
     def test_sparse_P_sparse_R(self):
-       self.sparse_P_sparse_R(mdptoolbox.mdp.PolicyIterationModified)
+       self.sparse_P_sparse_R(hiive.mdptoolbox.mdp.PolicyIterationModified)
 
 class TestQLearning(BaseTestIssue7):
 
     def test_dense_P_dense_R(self):
-        self.dense_P_dense_R(mdptoolbox.mdp.QLearning)
+        self.dense_P_dense_R(hiive.mdptoolbox.mdp.QLearning)
 
     def test_sparse_P_dense_R(self):
-        self.sparse_P_dense_R(mdptoolbox.mdp.QLearning)
+        self.sparse_P_dense_R(hiive.mdptoolbox.mdp.QLearning)
 
     def test_dense_P_sparse_R(self):
-        self.dense_P_sparse_R(mdptoolbox.mdp.QLearning)
+        self.dense_P_sparse_R(hiive.mdptoolbox.mdp.QLearning)
 
     def test_sparse_P_sparse_R(self):
-       self.sparse_P_sparse_R(mdptoolbox.mdp.QLearning)
+       self.sparse_P_sparse_R(hiive.mdptoolbox.mdp.QLearning)
 
 class TestValueIteration(BaseTestIssue7):
 
     def test_dense_P_dense_R(self):
-        self.dense_P_dense_R(mdptoolbox.mdp.ValueIteration)
+        self.dense_P_dense_R(hiive.mdptoolbox.mdp.ValueIteration)
 
     def test_sparse_P_dense_R(self):
-        self.sparse_P_dense_R(mdptoolbox.mdp.ValueIteration)
+        self.sparse_P_dense_R(hiive.mdptoolbox.mdp.ValueIteration)
 
     def test_dense_P_sparse_R(self):
-        self.dense_P_sparse_R(mdptoolbox.mdp.ValueIteration)
+        self.dense_P_sparse_R(hiive.mdptoolbox.mdp.ValueIteration)
 
     def test_sparse_P_sparse_R(self):
-       self.sparse_P_sparse_R(mdptoolbox.mdp.ValueIteration)
+       self.sparse_P_sparse_R(hiive.mdptoolbox.mdp.ValueIteration)
 
 class TestRelativeValueIteration(BaseTestIssue7):
 
     def test_dense_P_dense_R(self):
-        self.dense_P_dense_R(mdptoolbox.mdp.RelativeValueIteration)
+        self.dense_P_dense_R(hiive.mdptoolbox.mdp.RelativeValueIteration)
 
     def test_sparse_P_dense_R(self):
-        self.sparse_P_dense_R(mdptoolbox.mdp.RelativeValueIteration)
+        self.sparse_P_dense_R(hiive.mdptoolbox.mdp.RelativeValueIteration)
 
     def test_dense_P_sparse_R(self):
-        self.dense_P_sparse_R(mdptoolbox.mdp.RelativeValueIteration)
+        self.dense_P_sparse_R(hiive.mdptoolbox.mdp.RelativeValueIteration)
 
     def test_sparse_P_sparse_R(self):
-       self.sparse_P_sparse_R(mdptoolbox.mdp.RelativeValueIteration)
+       self.sparse_P_sparse_R(hiive.mdptoolbox.mdp.RelativeValueIteration)
 
 class TestValueIterationGS(BaseTestIssue7):
 
     def test_dense_P_dense_R(self):
-        self.dense_P_dense_R(mdptoolbox.mdp.ValueIterationGS)
+        self.dense_P_dense_R(hiive.mdptoolbox.mdp.ValueIterationGS)
 
     def test_sparse_P_dense_R(self):
-        self.sparse_P_dense_R(mdptoolbox.mdp.ValueIterationGS)
+        self.sparse_P_dense_R(hiive.mdptoolbox.mdp.ValueIterationGS)
 
     def test_dense_P_sparse_R(self):
-        self.dense_P_sparse_R(mdptoolbox.mdp.ValueIterationGS)
+        self.dense_P_sparse_R(hiive.mdptoolbox.mdp.ValueIterationGS)
 
     def test_sparse_P_sparse_R(self):
-       self.sparse_P_sparse_R(mdptoolbox.mdp.ValueIterationGS)
+       self.sparse_P_sparse_R(hiive.mdptoolbox.mdp.ValueIterationGS)

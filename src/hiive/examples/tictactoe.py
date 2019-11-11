@@ -5,7 +5,7 @@ import pickle
 import numpy as np
 from scipy.sparse import dok_matrix
 
-from mdptoolbox import mdp
+from hiive.mdptoolbox import mdp
 
 ACTIONS = 9
 STATES = 3**ACTIONS

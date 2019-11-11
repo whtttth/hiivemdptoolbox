@@ -9,8 +9,6 @@ from numpy import arange
 from numpy.random import permutation, random, randint
 from scipy._lib.six import xrange
 
-from mdptoolbox.error import StandardError
-
 
 def exampleForest(S=3, r1=4, r2=2, p=0.1):
     db = "MDP-forest-%s.db" % S

@@ -9,7 +9,8 @@ from nose.tools import assert_true
 import numpy as np
 import scipy as sp
 
-import mdptoolbox.example
+import hiive.mdptoolbox.example
+from hiive import mdptoolbox
 
 
 class BaseTestMDP(object):

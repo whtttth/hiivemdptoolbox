@@ -5,7 +5,7 @@ import scipy as sp
 
 from nose.tools import assert_raises
 
-import mdptoolbox
+import hiive.mdptoolbox
 
 from .utils import ACTIONS, STATES
 

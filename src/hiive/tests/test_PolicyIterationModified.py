@@ -9,7 +9,7 @@ from nose.tools import assert_equal
 import numpy as np
 import scipy.sparse as sp
 
-from mdptoolbox import mdp
+from hiive.mdptoolbox import mdp
 
 from .utils import BaseTestMDP, assert_sequence_almost_equal
 

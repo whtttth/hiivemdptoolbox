@@ -10,7 +10,8 @@ from nose.tools import assert_equal, assert_is_none, assert_true, \
 import numpy as np
 import scipy.sparse as sp
 
-import mdptoolbox.example
+import hiive.mdptoolbox.example
+from hiive import mdptoolbox
 
 
 def assert_equal_numpy_spacing(A, B):

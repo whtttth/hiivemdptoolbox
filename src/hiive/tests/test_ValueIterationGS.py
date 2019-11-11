@@ -7,7 +7,7 @@ Created on Sat Aug 24 15:08:01 2013
 
 import numpy as np
 
-import mdptoolbox
+import hiive.mdptoolbox
 
 from .utils import SMALLNUM, P_forest, R_forest, P_small, R_small, P_sparse
 from .utils import P_forest_sparse, R_forest_sparse

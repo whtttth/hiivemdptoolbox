@@ -61,15 +61,6 @@ class Error(Exception):
         return repr(self.message)
 
 
-class StandardError(Error):
-    """Class for standard error."""
-
-    def __init__(self, msg):
-        Error.__init__(self)
-        self.message += msg
-        self.args = tuple(msg)
-
-
 class InvalidError(Error):
     """Class for invalid definitions of a MDP."""
 

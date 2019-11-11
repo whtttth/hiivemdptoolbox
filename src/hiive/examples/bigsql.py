@@ -13,8 +13,8 @@ from numpy.random import permutation, random, randint
 from scipy.sparse import dok_matrix
 from scipy._lib.six import xrange
 
-from mdptoolbox.mdp import ValueIteration
-from experimental.mdpsql import ValueIteration as ValueIterationSQL
+from hiive.mdptoolbox.mdp import ValueIteration
+from hiive.experimental.mdpsql import ValueIteration as ValueIterationSQL
 
 
 def setup(S, A):
