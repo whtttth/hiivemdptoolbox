@@ -625,6 +625,7 @@ class PolicyIteration(MDP):
         MDP.__init__(self, transitions, reward, discount, None, max_iter,
                      skip_check=skip_check)
         # Check if the user has supplied an initial policy. If not make one.
+        self.run_stats = None
         if policy0 is None:
             # Initialise the policy to the one which maximises the expected
             # immediate reward
@@ -701,7 +702,7 @@ class PolicyIteration(MDP):
             Rpolicy = _sp.csr_matrix(Rpolicy)
         # self.Ppolicy = Ppolicy
         # self.Rpolicy = Rpolicy
-        return (Ppolicy, Rpolicy)
+        return Ppolicy, Rpolicy
 
     def _evalPolicyIterative(self, V0=0, epsilon=0.0001, max_iter=10000):
         # Evaluate a policy using iteration.
@@ -751,6 +752,7 @@ class PolicyIteration(MDP):
 
         itr = 0
         done = False
+
         while not done:
             itr += 1
 
@@ -772,6 +774,7 @@ class PolicyIteration(MDP):
                     print(_MSG_STOP_MAX_ITER)
 
         self.V = policy_V
+        return policy_V, policy_R, itr
 
     def _evalPolicyMatrix(self):
         # Evaluate the value function of the policy using linear equations.
@@ -795,21 +798,32 @@ class PolicyIteration(MDP):
         #
         Ppolicy, Rpolicy = self._computePpolicyPRpolicy()
         # V = PR + gPV  => (I-gP)V = PR  => V = inv(I-gP)* PR
-        self.V = _np.linalg.solve(
-            (_sp.eye(self.S, self.S) - self.gamma * Ppolicy), Rpolicy)
+        policy_V = _np.linalg.solve((_sp.eye(self.S, self.S) - self.gamma * Ppolicy), Rpolicy)
+        self.V = policy_V
+        return policy_V, Rpolicy, None
+
+    def _build_run_stat(self, error, policy_R, policy_V, policy_next):
+        return {
+            'Reward': policy_R,
+            'Error': error,
+            'Time': _time.time() - self.time,
+            'Epsilon': self.epsilon,
+            'Value': policy_V.copy(),
+            'Policy': policy_next.copy()
+        }
 
     def run(self):
         # Run the policy iteration algorithm.
         self._startRun()
+        self.run_stats = []
 
         while True:
             self.iter += 1
             # these _evalPolicy* functions will update the classes value
             # attribute
-            if self.eval_type == "matrix":
-                self._evalPolicyMatrix()
-            elif self.eval_type == "iterative":
-                self._evalPolicyIterative()
+            policy_V, policy_R, itr = (self._evalPolicyMatrix()
+                                       if self.eval_type == 'matrix'
+                                       else self._evalPolicyIterative())
             # This should update the classes policy attribute but leave the
             # value alone
             policy_next, null = self._bellmanOperator()
@@ -822,6 +836,10 @@ class PolicyIteration(MDP):
                 _printVerbosity(self.iter, n_different)
             # Once the policy is unchanging of the maximum number of
             # of iterations has been reached then stop
+
+            # Error, rewards, and time for every iteration and number of PI steps which might be specific to my setup
+            self.run_stats.append(self._build_run_stat(n_different, policy_R, policy_V, policy_next))
+
             if n_different == 0:
                 if self.verbose:
                     print(_MSG_STOP_UNCHANGING_POLICY)
@@ -838,7 +856,7 @@ class PolicyIteration(MDP):
 
 class PolicyIterationModified(PolicyIteration):
 
-    """A discounted MDP  solved using a modifified policy iteration algorithm.
+    """A discounted MDP  solved using a modified policy iteration algorithm.
 
     Arguments
     ---------
@@ -876,8 +894,8 @@ class PolicyIterationModified(PolicyIteration):
     Examples
     --------
     >>> import hiive.mdptoolbox, hiive.mdptoolbox.example
-    >>> P, R = mdptoolbox.example.forest()
-    >>> pim = mdptoolbox.mdp.PolicyIterationModified(P, R, 0.9)
+    >>> P, R = hiive.mdptoolbox.example.forest()
+    >>> pim = hiive.mdptoolbox.mdp.PolicyIterationModified(P, R, 0.9)
     >>> pim.run()
     >>> pim.policy
     (0, 0, 0)
@@ -1128,18 +1146,7 @@ class QLearning(MDP):
             Alpha decay and min ?
             And alpha and epsilon at each iteration?
             """
-            run_stat = {
-                'State': s,
-                'Action': a,
-                'Reward': r,
-                'Error': error,
-                'Time': _time.time() - self.time,
-                'Alpha': self.alpha,
-                'Epsilon': self.epsilon,
-                'Value': v.copy(),
-                'Policy': p.copy()
-            }
-            self.run_stats.append(run_stat)
+            self.run_stats.append(self._build_run_stat(a, error, p, r, s, v))
 
             # current state is updated
             s = s_new
@@ -1153,6 +1160,20 @@ class QLearning(MDP):
                 self.epsilon = self.epsilon_min
 
         self._endRun()
+
+    def _build_run_stat(self, a, error, p, r, s, v):
+        run_stat = {
+            'State': s,
+            'Action': a,
+            'Reward': r,
+            'Error': error,
+            'Time': _time.time() - self.time,
+            'Alpha': self.alpha,
+            'Epsilon': self.epsilon,
+            'Value': v.copy(),
+            'Policy': p.copy()
+        }
+        return run_stat
 
 
 class RelativeValueIteration(MDP):
