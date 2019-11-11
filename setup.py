@@ -2,7 +2,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='hiivemdptoolbox',
+    name='hiive.mdptoolbox',
     version='4.0-b4-dev',
     
     author='Andrew Rollings (originally Steven A. W. Cordwell)',
@@ -38,7 +38,7 @@ setup(
     keywords='mdp rl',
 
     packages=['hiive.mdptoolbox', 'hiive.examples'],
-    package_dir={'': 'src'},
+
     install_requires=['numpy', 'scipy'],
     extras_require={'LP': 'cvxopt'},
     setup_requires=['pytest-runner'],
