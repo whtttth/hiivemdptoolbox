@@ -807,7 +807,6 @@ class PolicyIteration(MDP):
             'Reward': policy_R,
             'Error': error,
             'Time': _time.time() - self.time,
-            'Epsilon': self.epsilon,
             'Value': policy_V.copy(),
             'Policy': policy_next.copy()
         }
