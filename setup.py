@@ -5,14 +5,13 @@ setup(name="hiivemdptoolbox",
       version="4.0-b4-dev",
       author="Steven A. W. Cordwell",
       author_email="steven.cordwell@uqconnect.edu.au",
-      url="https://github.com/sawcordwell/pymdptoolbox",
+      url="https://github.com/hiive/hiivemdptoolbox",
       description="Markov Decision Process (MDP) Toolbox",
       long_description="The MDP toolbox provides classes and functions for "
       "the resolution of discrete-time Markov Decision Processes. The list of "
       "algorithms that have been implemented includes backwards induction, "
       "linear programming, policy iteration, q-learning and value iteration "
       "along with several variations.",
-      download_url="https://pypi.python.org/pypi/pymdptoolbox",
       classifiers=[
           "Development Status :: 4 - Beta",
           "Environment :: Console",
@@ -34,7 +33,6 @@ setup(name="hiivemdptoolbox",
       platforms=["Any"],
       license="New BSD",
 
-      packages=['mdptoolbox', 'examples'],
-      package_dir={"": "src"},
+      packages=['hiive.mdptoolbox', 'hiive.examples'],
       install_requires=["numpy", "scipy"],
       extras_require={"LP": "cvxopt"})
