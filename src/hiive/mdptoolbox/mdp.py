@@ -398,7 +398,7 @@ class FiniteHorizon(MDP):
 
     Examples
     --------
-    >>> import mdptoolbox, mdptoolbox.example
+    >>> import hiive.mdptoolbox, hiive.mdptoolbox.example
     >>> P, R = mdptoolbox.example.forest()
     >>> fh = mdptoolbox.mdp.FiniteHorizon(P, R, 0.9, 3)
     >>> fh.run()
@@ -489,12 +489,12 @@ class _LP(MDP):
 
     Examples
     --------
-    >>> import mdptoolbox.example
+    >>> import hiive.mdptoolbox.example
     >>> P, R = mdptoolbox.example.forest()
     >>> lp = mdptoolbox.mdp._LP(P, R, 0.9)
     >>> lp.run()
 
-    >>> import numpy, mdptoolbox
+    >>> import numpy, hiive.mdptoolbox
     >>> P = numpy.array((((0.5, 0.5), (0.8, 0.2)), ((0, 1), (0.1, 0.9))))
     >>> R = numpy.array(((5, 10), (-1, 2)))
     >>> lp = mdptoolbox.mdp._LP(P, R, 0.9)
@@ -602,7 +602,7 @@ class PolicyIteration(MDP):
 
     Examples
     --------
-    >>> import mdptoolbox, mdptoolbox.example
+    >>> import hiive.mdptoolbox, hiive.mdptoolbox.example
     >>> P, R = mdptoolbox.example.rand(10, 3)
     >>> pi = mdptoolbox.mdp.PolicyIteration(P, R, 0.9)
     >>> pi.run()
@@ -875,7 +875,7 @@ class PolicyIterationModified(PolicyIteration):
 
     Examples
     --------
-    >>> import mdptoolbox, mdptoolbox.example
+    >>> import hiive.mdptoolbox, hiive.mdptoolbox.example
     >>> P, R = mdptoolbox.example.forest()
     >>> pim = mdptoolbox.mdp.PolicyIterationModified(P, R, 0.9)
     >>> pim.run()
@@ -989,7 +989,7 @@ class QLearning(MDP):
     >>> # These examples are reproducible only if random seed is set to 0 in
     >>> # both the random and numpy.random modules.
     >>> import numpy as np
-    >>> import mdptoolbox, mdptoolbox.example
+    >>> import hiive.mdptoolbox, hiive.mdptoolbox.example
     >>> np.random.seed(0)
     >>> P, R = mdptoolbox.example.forest()
     >>> ql = mdptoolbox.mdp.QLearning(P, R, 0.96)
@@ -1004,7 +1004,7 @@ class QLearning(MDP):
     >>> ql.policy
     (0, 1, 1)
 
-    >>> import mdptoolbox
+    >>> import hiive.mdptoolbox
     >>> import numpy as np
     >>> P = np.array([[[0.5, 0.5],[0.8, 0.2]],[[0, 1],[0.1, 0.9]]])
     >>> R = np.array([[5, 10], [-1, 2]])
@@ -1055,10 +1055,14 @@ class QLearning(MDP):
         # Initialisations
         self.Q = _np.zeros((self.S, self.A))
         self.mean_discrepancy = []
+        self.run_stats = []
 
     def run(self):
-        # Run the Q-learning algoritm.
+
+        # Run the Q-learning algorithm.
         discrepancy = []
+        self.run_stats = []
+        self.mean_discrepancy = []
 
         self.time = _time.time()
 
@@ -1079,10 +1083,6 @@ class QLearning(MDP):
             else:
                 # optimal_action = self.Q[s, :].max()
                 a = self.Q[s, :].argmax()
-
-            self.epsilon *= self.epsilon_decay
-            if self.epsilon < self.epsilon_min:
-                self.epsilon = self.epsilon_min
 
             # Simulating next state s_new and reward associated to <s,s_new,a>
             p_s_new = _np.random.random()
@@ -1106,16 +1106,9 @@ class QLearning(MDP):
 
             self.Q[s, a] = self.Q[s, a] + dQ
 
-            self.alpha *= self.alpha_decay
-            if self.alpha < self.alpha_min:
-                self.alpha = self.alpha_min
-
-
-            # current state is updated
-            s = s_new
-
             # Computing and saving maximal values of the Q variation
-            discrepancy.append(_np.absolute(dQ))
+            error = _np.absolute(dQ)
+            discrepancy.append(error)
 
             # Computing means all over maximal Q variations values
             if len(discrepancy) == 100:
@@ -1123,8 +1116,41 @@ class QLearning(MDP):
                 discrepancy = []
 
             # compute the value function and the policy
-            self.V = self.Q.max(axis=1)
-            self.policy = self.Q.argmax(axis=1)
+            v = self.Q.max(axis=1)
+            self.V = v
+            p = self.Q.argmax(axis=1)
+            self.policy = p
+
+            """
+            Rewards,errors time at each iteration I think
+            But that’s for all of them and steps per episode?
+
+            Alpha decay and min ?
+            And alpha and epsilon at each iteration?
+            """
+            run_stat = {
+                'State': s,
+                'Action': a,
+                'Reward': r,
+                'Error': error,
+                'Time': _time.time() - self.time,
+                'Alpha': self.alpha,
+                'Epsilon': self.epsilon,
+                'Value': v.copy(),
+                'Policy': p.copy()
+            }
+            self.run_stats.append(run_stat)
+
+            # current state is updated
+            s = s_new
+
+            self.alpha *= self.alpha_decay
+            if self.alpha < self.alpha_min:
+                self.alpha = self.alpha_min
+
+            self.epsilon *= self.epsilon_decay
+            if self.epsilon < self.epsilon_min:
+                self.epsilon = self.epsilon_min
 
         self._endRun()
 
@@ -1169,7 +1195,7 @@ class RelativeValueIteration(MDP):
 
     Examples
     --------
-    >>> import mdptoolbox, mdptoolbox.example
+    >>> import hiive.mdptoolbox, hiive.mdptoolbox.example
     >>> P, R = mdptoolbox.example.forest()
     >>> rvi = mdptoolbox.mdp.RelativeValueIteration(P, R)
     >>> rvi.run()
@@ -1180,7 +1206,7 @@ class RelativeValueIteration(MDP):
     >>> rvi.iter
     4
 
-    >>> import mdptoolbox
+    >>> import hiive.mdptoolbox
     >>> import numpy as np
     >>> P = np.array([[[0.5, 0.5],[0.8, 0.2]],[[0, 1],[0.1, 0.9]]])
     >>> R = np.array([[5, 10], [-1, 2]])
@@ -1319,7 +1345,7 @@ class ValueIteration(MDP):
 
     Examples
     --------
-    >>> import mdptoolbox, mdptoolbox.example
+    >>> import hiive.mdptoolbox, hiive.mdptoolbox.example
     >>> P, R = mdptoolbox.example.forest()
     >>> vi = mdptoolbox.mdp.ValueIteration(P, R, 0.96)
     >>> vi.verbose
@@ -1333,7 +1359,7 @@ class ValueIteration(MDP):
     >>> vi.iter
     4
 
-    >>> import mdptoolbox
+    >>> import hiive.mdptoolbox
     >>> import numpy as np
     >>> P = np.array([[[0.5, 0.5],[0.8, 0.2]],[[0, 1],[0.1, 0.9]]])
     >>> R = np.array([[5, 10], [-1, 2]])
@@ -1347,7 +1373,7 @@ class ValueIteration(MDP):
     >>> vi.iter
     26
 
-    >>> import mdptoolbox
+    >>> import hiive.mdptoolbox
     >>> import numpy as np
     >>> from scipy.sparse import csr_matrix as sparse
     >>> P = [None] * 2
@@ -1513,7 +1539,7 @@ class ValueIterationGS(ValueIteration):
 
     Examples
     --------
-    >>> import mdptoolbox.example, numpy as np
+    >>> import hiive.mdptoolbox.example, numpy as np
     >>> P, R = mdptoolbox.example.forest()
     >>> vigs = mdptoolbox.mdp.ValueIterationGS(P, R, 0.9)
     >>> vigs.run()
