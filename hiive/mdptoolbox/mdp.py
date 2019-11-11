@@ -1532,6 +1532,7 @@ class ValueIteration(MDP):
         }
         return run_stat
 
+
 class ValueIterationGS(ValueIteration):
 
     """
@@ -1579,8 +1580,8 @@ class ValueIterationGS(ValueIteration):
     Examples
     --------
     >>> import hiive.mdptoolbox.example, numpy as np
-    >>> P, R = mdptoolbox.example.forest()
-    >>> vigs = mdptoolbox.mdp.ValueIterationGS(P, R, 0.9)
+    >>> P, R = hiive.mdptoolbox.example.forest()
+    >>> vigs = hiive.mdptoolbox.mdp.ValueIterationGS(P, R, 0.9)
     >>> vigs.run()
     >>> expected = (25.5833879767579, 28.830654635546928, 32.83065463554693)
     >>> all(expected[k] - vigs.V[k] < 1e-12 for k in range(len(expected)))
