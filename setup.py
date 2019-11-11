@@ -33,6 +33,6 @@ setup(name="hiivemdptoolbox",
       platforms=["Any"],
       license="New BSD",
 
-      packages=['mdptoolbox', 'examples'],
+      packages=['hiive.mdptoolbox', 'hiive.examples'],
       install_requires=["numpy", "scipy"],
       extras_require={"LP": "cvxopt"})
