@@ -22,11 +22,11 @@ in html or pdf format from
 `The MDP toolbox homepage <http://www.somewhere.com>`_. The docstring
 examples assume that the ``mdptoolbox`` package is imported like so::
 
-  >>> import mdptoolbox
+  >>> import hiive.mdptoolbox
 
 To use the built-in examples, then the ``example`` module must be imported::
 
-  >>> import mdptoolbox.example
+  >>> import hiive.mdptoolbox.example
 
 Once the ``example`` module has been imported, then it is no longer neccesary
 to issue ``import mdptoolbox``.
