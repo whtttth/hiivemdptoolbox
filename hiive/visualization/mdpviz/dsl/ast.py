@@ -13,8 +13,8 @@
 # limitations under the License.
 import typing
 
-from hiive.visualization import mdp
-from hiive.visualization.mdp.dsl import context
+from hiive.visualization import mdpviz
+from hiive.visualization.mdpviz.dsl import context
 
 
 class DslSyntaxError(SyntaxError):
@@ -115,13 +115,13 @@ class Alternatives(Node, SupportConjunction, SupportMapping):
     
 
 class Reward(Node):
-    def __init__(self, reward: mdp.Reward):
+    def __init__(self, reward: mdpviz.Reward):
         super().__init__()
 
         self.reward = reward
 
     def __mul__(self, other):
-        return Reward(mdp.Reward(self.reward.outcome, self.reward.weight * other))
+        return Reward(mdpviz.Reward(self.reward.outcome, self.reward.weight * other))
 
     def apply(self, visitor: 'NodeVisitor'):
         return visitor.visit_reward(self)
@@ -144,7 +144,7 @@ class State(Node, SupportConjunction, SupportMapping):
         self.state = state
 
     def __mul__(self, other):
-        return WeightedState(mdp.NextState(self.state, other))
+        return WeightedState(mdpviz.NextState(self.state, other))
 
     def __gt__(self, other):
         return Mapping(self, other)
@@ -154,13 +154,13 @@ class State(Node, SupportConjunction, SupportMapping):
 
 
 class WeightedState(Node):
-    def __init__(self, next_state: mdp.NextState):
+    def __init__(self, next_state: mdpviz.NextState):
         super().__init__()
 
         self.next_state = next_state
 
     def __mul__(self, other):
-        return WeightedState(mdp.NextState(self.next_state.outcome, self.next_state.weight * other))
+        return WeightedState(mdpviz.NextState(self.next_state.outcome, self.next_state.weight * other))
 
     def apply(self, visitor: 'NodeVisitor'):
         return visitor.visit_weighted_state(self)
@@ -389,4 +389,4 @@ class TransitionOutcomeVisitor(NodeVisitor):
 
     def visit_state(self, node: State):
         for transition in self.iterator:
-            yield transition.replace(outcome=mdp.NextState(node.state))
+            yield transition.replace(outcome=mdpviz.NextState(node.state))

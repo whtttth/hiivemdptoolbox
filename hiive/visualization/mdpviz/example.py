@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from hiive.visualization.mdp import dsl, display_mdp
+from hiive.visualization.mdpviz import dsl, display_mdp
 
 
 # noinspection PyStatementEffect
@@ -104,7 +104,9 @@ def  _multi_round_nmdp():
 
         dsl.discount(0.5)
 
-        return mdp.validate()
+        ret = mdp.validate()
+        t, r = ret.get_transition_and_reward_arrays()
+        return ret
 
 
 ONE_ROUND_DMDP = _one_round_dmdp()
@@ -113,10 +115,10 @@ TWO_ROUND_DMDP = _two_round_dmdp()
 ONE_ROUND_NMDP = _one_round_nmdp()
 TWO_ROUND_NMDP = _two_round_nmdp()
 
-MULTI_ROUND_NDMP = _multi_round_nmdp()
+MULTI_ROUND_NMDP = _multi_round_nmdp()
 
 if __name__ == '__main__':
-    env = MULTI_ROUND_NDMP.to_env()
+    env = TWO_ROUND_DMDP.to_env()
 
     from matplotlib import pyplot
     import time

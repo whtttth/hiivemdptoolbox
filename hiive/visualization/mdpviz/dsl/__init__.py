@@ -13,9 +13,9 @@
 # limitations under the License.
 import contextlib
 
-from hiive.visualization import mdp
-from hiive.visualization.mdp.dsl import context as dsl_context
-from hiive.visualization.mdp.dsl import ast
+from hiive.visualization import mdpviz
+from hiive.visualization.mdpviz.dsl import context as dsl_context
+from hiive.visualization.mdpviz.dsl import ast
 
 # noinspection PyShadowingBuiltins
 SyntaxError = ast.DslSyntaxError
@@ -37,7 +37,7 @@ def action(name=None):
 
 
 def reward(value):
-    return ast.Reward(mdp.Reward(value))
+    return ast.Reward(mdpviz.Reward(value))
 
 
 def to_env():
@@ -55,6 +55,6 @@ def discount(value):
 @contextlib.contextmanager
 def new():
     old_context = dsl_context.mdp_spec
-    dsl_context.mdp_spec = mdp.MDPSpec()
+    dsl_context.mdp_spec = mdpviz.MDPSpec()
     yield dsl_context.mdp_spec
     dsl_context.mdp_spec = old_context

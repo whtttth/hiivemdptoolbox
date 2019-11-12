@@ -21,8 +21,6 @@ import gym.spaces
 import networkx as nx
 import numpy as np
 
-import hiive.visualization.version
-
 
 class State(object):
     def __init__(self, name, index, terminal_state=False):
@@ -229,6 +227,56 @@ class MDPSpec(object):
         # It will raise errors if anything is wrong.
         Transitions(self)
         return self
+
+    def get_transition_and_reward_arrays(self, p_default=0.5):
+        """Generate the fire management transition and reward matrices.
+
+        The output arrays from this function are valid input to the mdptoolbox.mdp
+        classes.
+
+        Let ``S`` = number of states, and ``A`` = number of actions.
+
+        Parameters
+        ----------
+        p_default : float
+            The class-independent probability of the population staying in its
+            current population abundance class.
+
+        Returns
+        -------
+        out : tuple
+            ``out[0]`` contains the transition probability matrices P and
+            ``out[1]`` contains the reward vector R. P is an  ``A`` × ``S`` × ``S``
+            numpy array and R is a numpy vector of length ``S``.
+
+        """
+        assert 0 <= p_default <= 1, "'p_default' must be between 0 and 1"
+        # The transition probability array
+        n_actions = len(self.actions)
+        n_states = len(self.states)
+        transition_probabilities = np.zeros((n_actions, n_states, n_states))
+        # The reward vector
+        rewards = np.zeros((n_states, n_actions))
+        # Loop over all states
+        for state in self.states:
+            s = state.index
+            # Loop over all actions
+            w = 0.0
+            for action in self.actions:
+                a = action.index
+                reward_info = self.reward_outcomes[(state, action)]
+                r = np.sum([rwi.outcome * rwi.weight for rwi in reward_info])
+                w += np.sum([rwi.weight for rwi in reward_info])
+                rewards[s, a] = r
+                # Assign the transition probabilities for this state, action pair
+                transitions = self.state_outcomes[(state, action)]
+                total_transition_weight = np.sum([so.weight for so in transitions])
+                for transition in transitions:
+                    state_next = transition.outcome
+                    transition_probabilities[a][s][state_next.index] = transition.weight / total_transition_weight
+            if w > 0:
+                rewards[s, :] /= w
+        return transition_probabilities, rewards
 
 
 class Transitions(object):

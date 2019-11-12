@@ -10,7 +10,7 @@ Available modules
 
 :mod:`~mdptoolbox.example`
     Examples of transition and reward matrices that form valid MDPs
-:mod:`~mdptoolbox.mdp`
+:mod:`~mdptoolbox.mdpviz`
     Makov decision process algorithms
 :mod:`~mdptoolbox.util`
     Functions for validating and working with an MDP
@@ -40,8 +40,8 @@ Code snippets are indicated by three greater-than signs::
 
 The documentation can be displayed with
 `IPython <http://ipython.scipy.org>`_. For example, to view the docstring of
-the ValueIteration class use ``mdp.ValueIteration?<ENTER>``, and to view its
-source code use ``mdp.ValueIteration??<ENTER>``.
+the ValueIteration class use ``mdpviz.ValueIteration?<ENTER>``, and to view its
+source code use ``mdpviz.ValueIteration??<ENTER>``.
 
 Acknowledgments
 ---------------

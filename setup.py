@@ -31,7 +31,7 @@ setup(
     platforms=['Any'],
     license='New BSD',
 
-    keywords='mdp rl',
+    keywords='mdpviz rl',
 
     packages=['hiive.mdptoolbox', 'hiive.examples'],
 

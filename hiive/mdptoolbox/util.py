@@ -58,36 +58,36 @@ import numpy as _np
 import hiive.mdptoolbox.error as _error
 
 _MDPERR = {
-"mat_nonneg" :
-    "Transition probabilities must be non-negative.",
-"mat_square" :
-    "A transition probability matrix must be square, with dimensions S×S.",
-"mat_stoch" :
-    "Each row of a transition probability matrix must sum to one (1).",
-"obj_shape" :
-    "Object arrays for transition probabilities and rewards "
-    "must have only 1 dimension: the number of actions A. Each element of "
-    "the object array contains an SxS ndarray or matrix.",
-"obj_square" :
-    "Each element of an object array for transition "
-    "probabilities and rewards must contain an SxS ndarray or matrix; i.e. "
-    "P[a].shape = (S, S) or R[a].shape = (S, S).",
-"P_type" :
-    "The transition probabilities must be in a numpy array; "
-    "i.e. type(P) is ndarray.",
-"P_shape" :
-    "The transition probability array must have the shape "
-    "(A, S, S)  with S : number of states greater than 0 and A : number of "
-    "actions greater than 0. i.e. R.shape = (A, S, S)",
-"PR_incompat" :
-    "Incompatibility between P and R dimensions.",
-"R_type" :
-    "The rewards must be in a numpy array; i.e. type(R) is "
-    "ndarray, or numpy matrix; i.e. type(R) is matrix.",
-"R_shape" :
-    "The reward matrix R must be an array of shape (A, S, S) or "
-    "(S, A) with S : number of states greater than 0 and A : number of "
-    "actions greater than 0. i.e. R.shape = (S, A) or (A, S, S)."
+    "mat_nonneg":
+        "Transition probabilities must be non-negative.",
+    "mat_square":
+        "A transition probability matrix must be square, with dimensions S×S.",
+    "mat_stoch":
+        "Each row of a transition probability matrix must sum to one (1).",
+    "obj_shape":
+        "Object arrays for transition probabilities and rewards "
+        "must have only 1 dimension: the number of actions A. Each element of "
+        "the object array contains an SxS ndarray or matrix.",
+    "obj_square":
+        "Each element of an object array for transition "
+        "probabilities and rewards must contain an SxS ndarray or matrix; i.e. "
+        "P[a].shape = (S, S) or R[a].shape = (S, S).",
+    "P_type":
+        "The transition probabilities must be in a numpy array; "
+        "i.e. type(P) is ndarray.",
+    "P_shape":
+        "The transition probability array must have the shape "
+        "(A, S, S)  with S : number of states greater than 0 and A : number of "
+        "actions greater than 0. i.e. R.shape = (A, S, S)",
+    "PR_incompat":
+        "Incompatibility between P and R dimensions.",
+    "R_type":
+        "The rewards must be in a numpy array; i.e. type(R) is "
+        "ndarray, or numpy matrix; i.e. type(R) is matrix.",
+    "R_shape":
+        "The reward matrix R must be an array of shape (A, S, S) or "
+        "(S, A) with S : number of states greater than 0 and A : number of "
+        "actions greater than 0. i.e. R.shape = (S, A) or (A, S, S)."
 }
 
 
@@ -157,7 +157,7 @@ def isStochastic(matrix):
     except AttributeError:
         matrix = _np.array(matrix)
         absdiff = (_np.abs(matrix.sum(axis=1) - _np.ones(matrix.shape[0])))
-    return (absdiff.max() <= 10*_np.spacing(_np.float64(1)))
+    return (absdiff.max() <= 10 * _np.spacing(_np.float64(1)))
 
 
 def isNonNegative(matrix):

@@ -18,17 +18,17 @@ This is a very basic solver.
 
 import numpy as np
 
-import hiive.visualization.mdp as mdp
+import hiive.visualization.mdpviz as mdp
 
 
 class LinearProgramming(object):
-    def __init__(self, mdp_spec: mdp.MDPSpec):
+    def __init__(self, mdp_spec: mdpviz.MDPSpec):
         self.discount = mdp_spec.discount
         self.num_states = mdp_spec.num_states
         self.num_actions = mdp_spec.num_actions
         self.mdp_spec = mdp_spec
 
-        transitions = mdp.Transitions(mdp_spec)
+        transitions = mdpviz.Transitions(mdp_spec)
         next_states = np.zeros(shape=(self.num_states, self.num_actions, self.num_states))
         expected_rewards = np.zeros(shape=(self.num_states, self.num_actions))
         for (state, action), choices in transitions.next_states.items():
