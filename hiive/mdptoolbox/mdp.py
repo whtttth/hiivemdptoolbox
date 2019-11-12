@@ -806,7 +806,7 @@ class PolicyIteration(MDP):
         return {
             'State': None,
             'Action': None,
-            'Reward': r,
+            'Max V': r,
             'Error': error,
             'Time': _time.time() - self.time,
             'Value': v.copy(),
@@ -817,7 +817,6 @@ class PolicyIteration(MDP):
         # Run the policy iteration algorithm.
         self._startRun()
         self.run_stats = []
-
         while True:
             self.iter += 1
             # these _evalPolicy* functions will update the classes value
@@ -827,8 +826,9 @@ class PolicyIteration(MDP):
                                        else self._evalPolicyIterative())
             # This should update the classes policy attribute but leave the
             # value alone
-            policy_next, null = self._bellmanOperator()
-            del null
+            policy_next, next_v = self._bellmanOperator()
+            var = _np.absolute(next_v - policy_V).max()
+            del next_v
             # calculate in how many places does the old policy disagree with
             # the new policy
             nd = (policy_next != self.policy).sum()
@@ -839,7 +839,8 @@ class PolicyIteration(MDP):
             # of iterations has been reached then stop
 
             # Error, rewards, and time for every iteration and number of PI steps which might be specific to my setup
-            self.run_stats.append(self._build_run_stat(s=None, a=None, r=policy_R, p=policy_next, v=policy_V, error=nd))
+            self.run_stats.append(self._build_run_stat(s=None, a=None, r=_np.max(policy_V),
+                                                       p=policy_next, v=policy_V, error=var))
 
             if nd == 0:
                 if self.verbose:
@@ -1503,7 +1504,7 @@ class ValueIteration(MDP):
             # finds the maximum of the the rows. (Operates along the columns?)
             var = _util.getSpan(self.V - Vprev)
 
-            self.run_stats.append(self._build_run_stat(s=None, a=None, r=self.R, p=self.policy, v=self.V, error=var))
+            self.run_stats.append(self._build_run_stat(s=None, a=None, r=_np.max(self.V), p=self.policy, v=self.V, error=var))
 
             if self.verbose:
                 _printVerbosity(self.iter, var)
@@ -1524,7 +1525,7 @@ class ValueIteration(MDP):
         run_stat = {
             'State': None,
             'Action': None,
-            'Reward': r,
+            'Max V': r,
             'Error': error,
             'Time': _time.time() - self.time,
             'Epsilon': self.epsilon,
