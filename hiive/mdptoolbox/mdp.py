@@ -1174,6 +1174,7 @@ class QLearning(MDP):
             'Time': _time.time() - self.time,
             'Alpha': self.alpha,
             'Epsilon': self.epsilon,
+            'Max V': _np.max(v),
             'Value': v.copy(),
             'Policy': p.copy()
         }
