@@ -178,33 +178,35 @@ class MDPSpec(object):
 
                         """
         # build nodes
-        graph.node.clear()
-        for n in self._node_attribute_dictionary:
-            graph.add_node(n=n)
+        # graph.node.clear()
+        for n, node_attributes in self._node_attribute_dictionary.items():
+            graph.add_node(node_for_adding=n, **node_attributes)
             if self.verbose:
                 print(f'Adding node: {n}, nodes={len(graph.node)}')
         if self.verbose:
             print()
 
         # build edges
-        graph.edge.clear()
+        # graph.edge.clear()
         for edge_key, edge_attributes in self._edge_attribute_dictionary.items():
             u, v = edge_key
-            graph.add_edge(u=u, v=v, **edge_attributes)
+            graph.add_edge(u_for_edge=u, v_for_edge=v, **edge_attributes)
             if self.verbose:
                 print(f'Adding edge: u={u}, v={v}, edges={len(graph.edge)}, attributes={edge_attributes}')
 
+        if self.verbose:
+            print()
         # for some reason, adding edges clears out the node dictionary.
         # so we set it now.
+        """
         for n, node_attributes in self._node_attribute_dictionary.items():
             graph.node[n] = node_attributes
             if self.verbose:
                 print(f'Setting node attributes for [{n}]: {node_attributes}')
         if self.verbose:
             print()
+        """
 
-        if self.verbose:
-            print()
 
         return graph
 
