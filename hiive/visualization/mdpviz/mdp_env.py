@@ -3,7 +3,6 @@ import numpy as np
 
 from hiive.visualization.mdpviz.state import State
 from hiive.visualization.mdpviz.transition_probabilities import TransitionProbabilities
-from hiive.visualization.mdpviz.action import Action
 from hiive.visualization.mdpviz.utils import graph_to_png
 
 
@@ -16,9 +15,9 @@ class MDPEnv(gym.Env):
         self.mdp_spec = mdp_spec
         self.transitions = TransitionProbabilities(mdp_spec)
 
-        self._previous_state: State = None
-        self._previous_action: Action = None
-        self._state: State = None
+        self._previous_state = None
+        self._previous_action = None
+        self._state = None
         self._is_done = True
         self.observation_space = gym.spaces.Discrete(self.mdp_spec.num_states)
         self.action_space = gym.spaces.Discrete(self.mdp_spec.num_actions)
