@@ -123,7 +123,7 @@ class MDP(object):
         numpy arrays. In addition, the outer list can be replaced by any object
         that can be indexed like ``reward[a]`` such as a tuple or numpy object
         array of length ``A``.
-    discount : float
+    gamma : float
         Discount factor. The per time-step discount factor on future rewards.
         Valid values are greater than 0 upto and including 1. If the discount
         factor is 1, then convergence is cannot be assumed and a warning will
@@ -156,7 +156,7 @@ class MDP(object):
         The optimal value function. Each element is a float corresponding to
         the expected value of being in that state assuming the optimal policy
         is followed.
-    discount : float
+    gamma : float
         The discount rate on future rewards.
     max_iter : int
         The maximum number of iterations.
@@ -179,14 +179,14 @@ class MDP(object):
 
     """
 
-    def __init__(self, transitions, reward, discount, epsilon, max_iter,
+    def __init__(self, transitions, reward, gamma, epsilon, max_iter,
                  skip_check=False):
         # Initialise a MDP based on the input parameters.
 
         # if the discount is None then the algorithm is assumed to not use it
         # in its computations
-        if discount is not None:
-            self.gamma = float(discount)
+        if gamma is not None:
+            self.gamma = float(gamma)
             assert 0.0 < self.gamma <= 1.0, (
                 "Discount rate must be in ]0; 1]"
             )
@@ -368,7 +368,7 @@ class FiniteHorizon(MDP):
     reward : array
         Reward matrices or vectors. See the documentation for the ``MDP`` class
         for details.
-    discount : float
+    gamma : float
         Discount factor. See the documentation for the ``MDP`` class for
         details.
     N : int
@@ -413,13 +413,13 @@ class FiniteHorizon(MDP):
 
     """
 
-    def __init__(self, transitions, reward, discount, N, h=None,
+    def __init__(self, transitions, reward, gamma, N, h=None,
                  skip_check=False):
         # Initialise a finite horizon MDP.
         self.N = int(N)
         assert self.N > 0, "N must be greater than 0."
         # Initialise the base class
-        MDP.__init__(self, transitions, reward, discount, None, None,
+        MDP.__init__(self, transitions, reward, gamma, None, None,
                      skip_check=skip_check)
         # remove the iteration counter, it is not meaningful for backwards
         # induction
@@ -468,7 +468,7 @@ class _LP(MDP):
     reward : array
         Reward matrices or vectors. See the documentation for the ``MDP`` class
         for details.
-    discount : float
+    gamma : float
         Discount factor. See the documentation for the ``MDP`` class for
         details.
     h : array, optional
@@ -503,7 +503,7 @@ class _LP(MDP):
 
     """
 
-    def __init__(self, transitions, reward, discount, skip_check=False):
+    def __init__(self, transitions, reward, gamma, skip_check=False):
         # Initialise a linear programming MDP.
         # import some functions from cvxopt and set them as object methods
         try:
@@ -514,7 +514,7 @@ class _LP(MDP):
             raise ImportError("The python module cvxopt is required to use "
                               "linear programming functionality.")
         # initialise the MDP. epsilon and max_iter are not needed
-        MDP.__init__(self, transitions, reward, discount, None, None,
+        MDP.__init__(self, transitions, reward, gamma, None, None,
                      skip_check=skip_check)
         # Set the cvxopt solver to be quiet by default, but ...
         # this doesn't do what I want it to do c.f. issue #3
@@ -567,7 +567,7 @@ class PolicyIteration(MDP):
     reward : array
         Reward matrices or vectors. See the documentation for the ``MDP`` class
         for details.
-    discount : float
+    gamma : float
         Discount factor. See the documentation for the ``MDP`` class for
         details.
     policy0 : array, optional
@@ -617,12 +617,12 @@ class PolicyIteration(MDP):
     (0, 0, 0)
     """
 
-    def __init__(self, transitions, reward, discount, policy0=None,
+    def __init__(self, transitions, reward, gamma, policy0=None,
                  max_iter=1000, eval_type=0, skip_check=False):
         # Initialise a policy iteration MDP.
         #
         # Set up the MDP, but don't need to worry about epsilon values
-        MDP.__init__(self, transitions, reward, discount, None, max_iter,
+        MDP.__init__(self, transitions, reward, gamma, None, max_iter,
                      skip_check=skip_check)
         # Check if the user has supplied an initial policy. If not make one.
         self.run_stats = None
@@ -869,7 +869,7 @@ class PolicyIterationModified(PolicyIteration):
     reward : array
         Reward matrices or vectors. See the documentation for the ``MDP`` class
         for details.
-    discount : float
+    gamma : float
         Discount factor. See the documentation for the ``MDP`` class for
         details.
     epsilon : float, optional
@@ -908,7 +908,7 @@ class PolicyIterationModified(PolicyIteration):
 
     """
 
-    def __init__(self, transitions, reward, discount, epsilon=0.01,
+    def __init__(self, transitions, reward, gamma, epsilon=0.01,
                  max_iter=10, skip_check=False):
         # Initialise a (modified) policy iteration MDP.
 
@@ -917,7 +917,7 @@ class PolicyIterationModified(PolicyIteration):
         # being calculated here which doesn't need to be. The only thing that
         # is needed from the PolicyIteration class is the _evalPolicyIterative
         # function. Perhaps there is a better way to do it?
-        PolicyIteration.__init__(self, transitions, reward, discount, None,
+        PolicyIteration.__init__(self, transitions, reward, gamma, None,
                                  max_iter, 1, skip_check=skip_check)
 
         # PolicyIteration doesn't pass epsilon to MDP.__init__() so we will
@@ -1044,7 +1044,7 @@ class QLearning(MDP):
     """
 
     def __init__(self, transitions, reward, gamma,
-                 alpha=0.1, alpha_decay=0.99, alpha_min=0.1,
+                 alpha=0.1, alpha_decay=0.99, alpha_min=0.001,
                  epsilon=1.0, epsilon_min=0.1, epsilon_decay=0.99,
                  n_iter=10000, skip_check=False):
         # Initialise a Q-learning MDP.
@@ -1325,7 +1325,7 @@ class ValueIteration(MDP):
     reward : array
         Reward matrices or vectors. See the documentation for the ``MDP`` class
         for details.
-    discount : float
+    gamma : float
         Discount factor. See the documentation for the ``MDP`` class for
         details.
     epsilon : float, optional
@@ -1418,11 +1418,11 @@ class ValueIteration(MDP):
 
     """
 
-    def __init__(self, transitions, reward, discount, epsilon=0.01,
+    def __init__(self, transitions, reward, gamma, epsilon=0.01,
                  max_iter=1000, initial_value=0, skip_check=False):
         # Initialise a value iteration MDP.
 
-        MDP.__init__(self, transitions, reward, discount, epsilon, max_iter,
+        MDP.__init__(self, transitions, reward, gamma, epsilon, max_iter,
                      skip_check=skip_check)
         self.run_stats = None
         # initialization of optional arguments
@@ -1550,7 +1550,7 @@ class ValueIterationGS(ValueIteration):
     reward : array
         Reward matrices or vectors. See the documentation for the ``MDP`` class
         for details.
-    discount : float
+    gamma : float
         Discount factor. See the documentation for the ``MDP`` class for
         details.
     epsilon : float, optional
@@ -1595,11 +1595,11 @@ class ValueIterationGS(ValueIteration):
 
     """
 
-    def __init__(self, transitions, reward, discount, epsilon=0.01,
+    def __init__(self, transitions, reward, gamma, epsilon=0.01,
                  max_iter=10, initial_value=0, skip_check=False):
         # Initialise a value iteration Gauss-Seidel MDP.
 
-        MDP.__init__(self, transitions, reward, discount, epsilon, max_iter,
+        MDP.__init__(self, transitions, reward, gamma, epsilon, max_iter,
                      skip_check=skip_check)
 
         # initialization of optional arguments

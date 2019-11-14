@@ -126,8 +126,8 @@ def forest(S=3, r1=4, r2=2, p=0.1, is_sparse=False):
 
     Examples
     --------
-    >>> import mdptoolbox.example
-    >>> P, R = mdptoolbox.example.forest()
+    >>> import hiive.mdptoolbox.example
+    >>> P, R = hiive.mdptoolbox.example.forest()
     >>> P
     array([[[ 0.1,  0.9,  0. ],
             [ 0.1,  0. ,  0.9],
@@ -140,7 +140,7 @@ def forest(S=3, r1=4, r2=2, p=0.1, is_sparse=False):
     array([[ 0.,  0.],
            [ 0.,  1.],
            [ 4.,  2.]])
-    >>> Psp, Rsp = mdptoolbox.example.forest(is_sparse=True)
+    >>> Psp, Rsp = hiive.mdptoolbox.example.forest(is_sparse=True)
     >>> len(Psp)
     2
     >>> Psp[0]
@@ -294,9 +294,9 @@ def rand(S, A, is_sparse=False, mask=None):
 
     Examples
     --------
-    >>> import numpy, mdptoolbox.example
+    >>> import numpy, hiive.mdptoolbox.example
     >>> numpy.random.seed(0) # Needed to get the output below
-    >>> P, R = mdptoolbox.example.rand(4, 3)
+    >>> P, R = hiive.mdptoolbox.example.rand(4, 3)
     >>> P
     array([[[ 0.21977283,  0.14889403,  0.30343592,  0.32789723],
             [ 1.        ,  0.        ,  0.        ,  0.        ],
@@ -386,8 +386,8 @@ def small():
 
     Examples
     ========
-    >>> import mdptoolbox.example
-    >>> P, R = mdptoolbox.example.small()
+    >>> import hiive.mdptoolbox.example
+    >>> P, R = hiive.mdptoolbox.example.small()
     >>> P
     array([[[ 0.5,  0.5],
             [ 0.8,  0.2]],
@@ -401,4 +401,4 @@ def small():
     """
     P = _np.array([[[0.5, 0.5], [0.8, 0.2]], [[0, 1], [0.1, 0.9]]])
     R = _np.array([[5, 10], [-1, 2]])
-    return(P, R)
+    return P, R

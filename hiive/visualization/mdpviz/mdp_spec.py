@@ -128,22 +128,25 @@ class MDPSpec(object):
             # for s2 in self.states:
             #    self.set_edge_attributes(u=state, v=s2, label=f'{state.name} ->{s2.name}')
 
-        if True:
-            t_index = 0
-            for state in self.states:
-                if not state.terminal_state:
-                    for action in self.actions:
-                        reward_probs = transitions.rewards[state, action].items()
-                        expected_reward = sum(reward * prob for reward, prob in reward_probs)
-                        stddev_reward = (sum(
-                            reward * reward * prob for reward, prob in
-                            reward_probs) - expected_reward * expected_reward) ** 0.5
+        t_index = 0
+        for state in self.states:
+            if not state.terminal_state:
+                for action in self.actions:
+                    reward_probs = transitions.rewards[state, action].items()
+                    expected_reward = sum(reward * prob for reward, prob in reward_probs)
+                    stddev_reward = (sum(
+                        reward * reward * prob for reward, prob in
+                        reward_probs) - expected_reward * expected_reward) ** 0.5
 
-                        action_label = '%s %+.2f' % (action.name, expected_reward)
-                        if len(reward_probs) > 1:
-                            action_label += ' (%.2f)' % stddev_reward
+                    action_label = '%s %+.2f' % (action.name, expected_reward)
+                    if len(reward_probs) > 1:
+                        action_label += ' (%.2f)' % stddev_reward
 
-                        next_states = transitions.next_states[state, action].items()
+                    next_states = transitions.next_states[state, action].items()
+                    if len(next_states) == 1:
+                        next_state, _ = list(next_states)[0]
+                        self.set_edge_attributes(u=state, v=next_state, type='state_to_state', color=color, label=action_label)
+                    else:
                         transition = Transition(action, state, t_index)
                         t_index += 1
                         action_color = action.index + 1
