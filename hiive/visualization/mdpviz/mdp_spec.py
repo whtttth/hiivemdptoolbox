@@ -15,7 +15,7 @@ from hiive.visualization.mdpviz.outcome import Outcome
 
 
 class MDPSpec(object):
-    def __init__(self):
+    def __init__(self, verbose=False):
         self._states = {}
         self._actions = {}
         self.states = []
@@ -25,6 +25,7 @@ class MDPSpec(object):
         self.discount = 1.0
         self._node_attribute_dictionary = {}
         self._edge_attribute_dictionary = {}
+        self.verbose = verbose
 
     def state(self, name=None, terminal_state=False):
         if not name:
@@ -115,15 +116,15 @@ class MDPSpec(object):
         graph = nx.MultiDiGraph()
         self._node_attribute_dictionary = {}
         self._edge_attribute_dictionary = {}
+
         for state in self.states:
-            fillcolor = 'yellow' if highlight_state == state else 'red' if highlight_next_state == state else '#C0C0FF'
-            style = 'filled' if highlight_state == state or highlight_next_state == state else None
+            fillcolor = 'yellow' if highlight_state == state else 'red' if highlight_next_state == state else '#FFFFC0'
             self.set_node_attributes(n=state,
-                                     labeljust=state.name,
-                                     shape='doublecircle' if state.terminal_state else 'circle',
+                                     shape='doubleoctagon' if state.terminal_state else 'circle',
+                                     label=state.name,
                                      fillcolor=fillcolor,
-                                     style=style,
-                                     data='n1')
+                                     style='filled',
+                                     type='state')
             # for s2 in self.states:
             #    self.set_edge_attributes(u=state, v=s2, label=f'{state.name} ->{s2.name}')
 
@@ -145,21 +146,24 @@ class MDPSpec(object):
                         next_states = transitions.next_states[state, action].items()
                         transition = Transition(action, state, t_index)
                         t_index += 1
-                        self.set_edge_attributes(u=state, v=transition, data='e1', color='red', label=action_label)
-                        self.set_node_attributes(n=transition, data='n2', color='green',
-                                                 shape='point')  # ,  fillcolor='#FFC0C0'
+                        action_color = action.index + 1
+                        color = f'/dark28/{action_color}'
+                        self.set_edge_attributes(u=state, v=transition, type='state_to_transition', color=color, label=action_label)
+                        # transition_label = f'{state.name, action.name}'
+                        self.set_node_attributes(n=transition, type='transition', # label=transition_label,
+                                                 fillcolor='#FFE0FF', style='filled, bold', shape='point')
 
                         for next_state, prob in next_states:
                             if not prob:
                                 continue
+                            color = f'/set28/{action_color}'
                             self.set_edge_attributes(u=transition, v=next_state, label='%3.2f%%' % (prob * 100),
-                                                     color='blue',
-                                                     data='e2')
+                                                     color=color,
+                                                     type='transition_to_state')
 
                         if state == highlight_state and action == highlight_action:
-                            transition_label = f'{state.name, action.name}'
-                            self.set_node_attributes(n=transition, style='bold', labeljust=transition_label, data='n3')
-                            self.set_edge_attributes(u=transition, v=next_state, style='bold', color='green', data='e3')
+                            self.set_node_attributes(n=transition, style='bold')
+                            self.set_edge_attributes(u=transition, v=next_state, style='bold', color='green')
                             if highlight_next_state:
                                 self.set_edge_attributes(u=transition, v=highlight_next_state, style='bold',
                                                          color='red', data='e4')
@@ -170,37 +174,34 @@ class MDPSpec(object):
                             self.set_node_attributes(n=(next_state, action), label=action_label, style='bold', color='red')
 
                         """
-        # build nodes and edges
+        # build nodes
         graph.node.clear()
-        for n, node_attributes in self._node_attribute_dictionary.items():
-            na = {n: node_attributes}
-            graph.add_node(n=n, attr_dict=na)
-            print(f'Adding node: {n}, nodes={len(graph.node)}, attributes={na}')
-        print()
+        for n in self._node_attribute_dictionary:
+            graph.add_node(n=n)
+            if self.verbose:
+                print(f'Adding node: {n}, nodes={len(graph.node)}')
+        if self.verbose:
+            print()
 
+        # build edges
         graph.edge.clear()
         for edge_key, edge_attributes in self._edge_attribute_dictionary.items():
             u, v = edge_key
             graph.add_edge(u=u, v=v, **edge_attributes)
-            print(f'Adding edge: u={u}, v={v}, edges={len(graph.edge)}, attributes={edge_attributes}')
-        print()
+            if self.verbose:
+                print(f'Adding edge: u={u}, v={v}, edges={len(graph.edge)}, attributes={edge_attributes}')
 
-        # remove any non-linked nodes
-        print()
-        for n in {**graph.node}:
-            links = len(graph.predecessors(n)) + len(graph.successors(n))
-            attributes = self._node_attribute_dictionary[n] if n in self._node_attribute_dictionary else None
-            print(f'Node: {n} : links {links}, attributes = {attributes}')
-            if attributes == None:
-                graph.remove_node(n)
+        # for some reason, adding edges clears out the node dictionary.
+        # so we set it now.
+        for n, node_attributes in self._node_attribute_dictionary.items():
+            graph.node[n] = node_attributes
+            if self.verbose:
+                print(f'Setting node attributes for [{n}]: {node_attributes}')
+        if self.verbose:
+            print()
 
-        print()
-        for e in {**graph.edge}:
-            links = len(graph.predecessors(e)) + len(graph.successors(e))
-            attributes = graph.adj[e] if e in graph.adj else None
-            print(f'Edge: {e} : links {links}, attributes = {attributes}')
-            # if attributes == None:
-            # graph.remove_edge(u=e, v=None)
+        if self.verbose:
+            print()
 
         return graph
 
@@ -210,74 +211,6 @@ class MDPSpec(object):
         else:
             attributes = graph.nodes(state)[0][1]
         return attributes
-
-    def to_graph2(self, highlight_state: State = None, highlight_action: Action = None,
-                  highlight_next_state: State = None):
-        transitions = TransitionProbabilities(self)
-
-        graph = nx.MultiDiGraph()
-        for state in self.states:
-            graph.add_node(state, label=state.name)
-            attributes = self.get_node_attributes(graph, state)
-            if state.terminal_state:
-                attributes['shape'] = 'doublecircle'
-            if state == highlight_state:
-                attributes['fillcolor'] = 'yellow'
-                attributes['style'] = 'filled'
-            if state == highlight_next_state:
-                attributes['fillcolor'] = 'red'
-                attributes['style'] = 'filled'
-
-        for state in self.states:
-            if not state.terminal_state:
-                for action in self.actions:
-                    reward_probs = transitions.rewards[state, action].items()
-                    expected_reward = sum(reward * prob for reward, prob in reward_probs)
-                    stddev_reward = (sum(
-                        reward * reward * prob for reward, prob in
-                        reward_probs) - expected_reward * expected_reward) ** 0.5
-
-                    action_label = '%s %+.2f' % (action.name, expected_reward)
-                    if len(reward_probs) > 1:
-                        action_label += ' (%.2f)' % stddev_reward
-
-                    next_states = transitions.next_states[state, action].items()
-                    if len(next_states) > 1:
-                        transition = (state, action)
-
-                        graph.add_node(transition, shape='point')
-                        graph.add_edge(state, transition, label=action_label)
-
-                        for next_state, prob in next_states:
-                            if not prob:
-                                continue
-                            graph.add_edge(transition, next_state, label='%3.2f%%' % (prob * 100))
-
-                        if state == highlight_state and action == highlight_action:
-                            attributes = self.get_node_attributes(graph, transition)
-                            attributes['style'] = 'bold'
-                            attributes = graph.get_edge_data(state, transition)[0]
-                            attributes['style'] = 'bold'
-                            attributes['color'] = 'green'
-                            if highlight_next_state:
-                                # Could also check that highlight_next_state is really a next state.
-                                attributes = graph.get_edge_data(transition, highlight_next_state)[0]
-                                attributes['style'] = 'bold'
-                                attributes['color'] = 'red'
-                    else:
-                        next_state, _ = list(next_states)[0]
-                        graph.add_edge(state, next_state, key=action,
-                                       label=action_label)
-                        if state == highlight_state and action == highlight_action:
-                            attributes = graph.get_edge_data(state, next_state, action)[0]
-                            attributes['style'] = 'bold'
-                            attributes['color'] = 'red'
-
-        # remove any non-linked nodes
-        for n in graph.node:
-            print(n)
-
-        return graph
 
     def to_env(self):
         return MDPEnv(self)
@@ -339,7 +272,7 @@ class MDPSpec(object):
                     total_transition_weight += np.sum([so.weight for so in transitions])
                     for transition in transitions:
                         state_next = transition.outcome
-                    transition_probabilities[a][s][state_next.index] = transition.weight
+                        transition_probabilities[a][s][state_next.index] = transition.weight
                 # transition_probabilities[a, s, ] /= total_transition_weight
                 transition_probabilities[a, s, :] /= np.sum(transition_probabilities[a, s, :])
             if w > 0:
