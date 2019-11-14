@@ -1066,10 +1066,12 @@ class QLearning(MDP):
         self.R = reward
 
         self.alpha = _np.clip(alpha, 0., 1.)
+        self.alpha_start = self.alpha
         self.alpha_decay = _np.clip(alpha_decay, 0., 1.)
         self.alpha_min = _np.clip(alpha_min, 0., 1.)
         self.gamma = _np.clip(gamma, 0., 1.)
         self.epsilon = _np.clip(epsilon, 0., 1.)
+        self.epsilon_start = self.epsilon
         self.epsilon_decay = _np.clip(epsilon_decay, 0., 1.)
         self.epsilon_min = _np.clip(epsilon_min, 0., 1.)
 

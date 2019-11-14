@@ -11,7 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from hiive.visualization.mdpviz import dsl, display_mdp
+from hiive.visualization.mdpviz import dsl
+from hiive.visualization.mdpviz.utils import display_mdp
 
 
 # noinspection PyStatementEffect
