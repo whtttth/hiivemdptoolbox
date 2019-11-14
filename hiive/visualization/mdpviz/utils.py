@@ -1,8 +1,5 @@
 import os
-
 import networkx as nx
-
-from hiive.visualization.mdpviz.mdp_spec import MDPSpec
 
 
 def graph_to_png(graph):
@@ -22,6 +19,6 @@ def write_to_png(graph, file, dpi=300, **kwargs):
     pydot_graph.write_png(file)
 
 
-def display_mdp(mdp: MDPSpec):
+def display_mdp(mdp_spec):
     from IPython.display import display, Image
-    display(Image(graph_to_png(mdp.to_graph())))
+    display(Image(graph_to_png(mdp_spec.to_graph())))
