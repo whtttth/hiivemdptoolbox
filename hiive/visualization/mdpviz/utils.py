@@ -2,7 +2,7 @@ import os
 
 import networkx as nx
 
-from hiive.visualization.mdpviz import MDPSpec
+from hiive.visualization.mdpviz.mdp_spec import MDPSpec
 
 
 def graph_to_png(graph):

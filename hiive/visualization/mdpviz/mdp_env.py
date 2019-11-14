@@ -1,7 +1,11 @@
 import gym
 import numpy as np
 
-from hiive.visualization.mdpviz import MDPSpec, State, TransitionProbabilities, Action, graph_to_png
+from hiive.visualization.mdpviz.mdp_spec import MDPSpec
+from hiive.visualization.mdpviz.state import State
+from hiive.visualization.mdpviz.transition_probabilities import TransitionProbabilities
+from hiive.visualization.mdpviz.action import Action
+from hiive.visualization.mdpviz.utils import graph_to_png
 
 
 class MDPEnv(gym.Env):

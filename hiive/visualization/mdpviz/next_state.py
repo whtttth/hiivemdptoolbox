@@ -1,6 +1,6 @@
 import typing
 
-from hiive.visualization.mdpviz import Outcome
+from hiive.visualization.mdpviz.outcome import Outcome
 
 
 class NextState(Outcome):

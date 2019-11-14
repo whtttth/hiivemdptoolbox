@@ -14,7 +14,7 @@ class State(object):
         ret = f'{self.name}'.replace(' ', '_').replace(':', '_').replace(',', '_')
         print(f'__str__(State): {ret}')
         return ret
-        return self.name
+        # return self.name
 
     def __hash__(self):
         return self.__str__().__hash__()

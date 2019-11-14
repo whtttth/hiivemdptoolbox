@@ -1,4 +1,6 @@
-from hiive.visualization.mdpviz import MDPSpec, NextState, Reward
+from hiive.visualization.mdpviz.mdp_spec import MDPSpec
+from hiive.visualization.mdpviz.next_state import NextState
+from hiive.visualization.mdpviz.reward import Reward
 
 
 class TransitionProbabilities(object):

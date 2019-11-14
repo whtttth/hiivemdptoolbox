@@ -4,8 +4,14 @@ from collections import defaultdict
 import networkx as nx
 import numpy as np
 
-from hiive.visualization.mdpviz import NextState, Reward, State, Action, Outcome, TransitionProbabilities, Transition
 from hiive.visualization.mdpviz.mdp_env import MDPEnv
+from hiive.visualization.mdpviz.transition import Transition
+from hiive.visualization.mdpviz.state import State
+from hiive.visualization.mdpviz.transition_probabilities import TransitionProbabilities
+from hiive.visualization.mdpviz.action import Action
+from hiive.visualization.mdpviz.next_state import NextState
+from hiive.visualization.mdpviz.reward import Reward
+from hiive.visualization.mdpviz.outcome import Outcome
 
 
 class MDPSpec(object):
