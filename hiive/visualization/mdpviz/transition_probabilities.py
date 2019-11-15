@@ -2,7 +2,7 @@ from hiive.visualization.mdpviz.next_state import NextState
 from hiive.visualization.mdpviz.reward import Reward
 
 
-class TransitionProbabilities(object):
+class TransitionProbabilities:
     """Container for transition probabilities."""
 
     def __init__(self, mdp_spec):

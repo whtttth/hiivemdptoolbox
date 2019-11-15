@@ -1,4 +1,4 @@
-class Action(object):
+class Action:
     def __init__(self, name, index):
         self.name = name
         self.index = index

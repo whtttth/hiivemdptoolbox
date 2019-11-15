@@ -1,4 +1,4 @@
-class State(object):
+class State:
     def __init__(self, name, index, terminal_state=False):
         if name is None or len(name.strip()) == 0:
             print()

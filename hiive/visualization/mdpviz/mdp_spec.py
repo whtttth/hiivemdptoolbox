@@ -144,14 +144,14 @@ class MDPSpec(object):
                         action_label += ' (%.2f)' % stddev_reward
 
                     next_states = transitions.next_states[state, action].items()
+                    action_color = action.index + 1
+                    color = f'/dark28/{action_color}'
                     if len(next_states) == 1:
                         next_state, _ = list(next_states)[0]
                         self.set_edge_attributes(u=state, v=next_state, type='state_to_state', color=color, label=action_label)
                     else:
                         transition = Transition(action, state, t_index)
                         t_index += 1
-                        action_color = action.index + 1
-                        color = f'/dark28/{action_color}'
                         self.set_edge_attributes(u=state, v=transition, type='state_to_transition', color=color, label=action_label)
                         # transition_label = f'{state.name, action.name}'
                         self.set_node_attributes(n=transition, type='transition', # label=transition_label,

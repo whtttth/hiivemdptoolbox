@@ -1,4 +1,4 @@
-from hiive.visualization import graph_to_png
+from hiive.visualization.mdpviz.utils import graph_to_png
 
 
 class _MDPEnvVisualizationMixin:

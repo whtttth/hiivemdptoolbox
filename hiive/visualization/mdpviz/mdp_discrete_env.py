@@ -1,18 +1,47 @@
+import gym
 import numpy as np
 
-from hiive.visualization import MDPEnv, State
+from hiive.visualization.mdpviz.state import State
+from hiive.visualization.mdpviz._mdp_env_visualization_mixin import _MDPEnvVisualizationMixin
+from hiive.visualization.mdpviz.transition_probabilities import TransitionProbabilities
 
 
-class MDPDiscreteEnv(MDPEnv):
+class MDPDiscreteEnv(gym.Env, _MDPEnvVisualizationMixin):
     metadata = {'render.modes': ['human', 'rgb_array', 'png']}
 
     def __init__(self, mdp_spec, start_state: State = None):
+        self.render_widget = None
 
-        super().__init__(mdp_spec, start_state)
+        self.mdp_spec = mdp_spec
+        self.transitions = TransitionProbabilities(mdp_spec)
+        """
+        P[s][a] == [(probability, nextstate, reward, done), ...]
+        """
+        self._previous_state = None
+        self._previous_action = None
+        self._state = None
+        self._is_done = True
+        self.observation_space = gym.spaces.Discrete(self.mdp_spec.num_states)
+        self.action_space = gym.spaces.Discrete(self.mdp_spec.num_actions)
+        self.start_state = start_state or list(self.mdp_spec.states)[0]
+
         """
         P[s][a] == [(probability, nextstate, reward, done), ...]
         """
         self.P = {s: {a: [] for a in range(mdp_spec.num_actions)} for s in range(mdp_spec.num_states)}
+        for s in range(self.mdp_spec.num_states):
+            for a in range(self.mdp_spec.num_actions):
+                state = self.mdp_spec.states[s]
+                action = self.mdp_spec.actions[a]
+                pss = list(self.transitions.next_states[(state, action)])
+                rss = list(self.transitions.rewards[(state, action)].items())
+                psrss = list(zip(pss, rss))
+                for ps, rs in psrss:
+                    p = rs[1]
+                    ns = self.mdp_spec.states.index(ps)
+                    r = rs[0]
+                    d = ps.terminal_state
+                    self.P[s][a].append((p, ns, r, d))
 
     def reset(self):
         self._previous_state = None

@@ -2,7 +2,7 @@ import typing
 from collections import defaultdict
 
 
-class Outcome(object):
+class Outcome:
     """An outcome can be either a reward or a next state.
 
     For a given (state, action) transition all potential outcomes
