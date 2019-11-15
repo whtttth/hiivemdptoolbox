@@ -15,6 +15,7 @@
 # from .example import ONE_ROUND_DMDP, ONE_ROUND_NMDP, MULTI_ROUND_NDMP, TWO_ROUND_DMDP, TWO_ROUND_NMDP
 
 from hiive.visualization.mdpviz.mdp_env import MDPEnv
+from hiive.visualization.mdpviz.mdp_discrete_env import MDPDiscreteEnv
 from hiive.visualization.mdpviz.action import Action
 from hiive.visualization.mdpviz.mdp_spec import MDPSpec
 from hiive.visualization.mdpviz.next_state import NextState

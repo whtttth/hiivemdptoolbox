@@ -4,6 +4,7 @@ from collections import defaultdict
 import networkx as nx
 import numpy as np
 
+from hiive.visualization.mdpviz.mdp_discrete_env import MDPDiscreteEnv
 from hiive.visualization.mdpviz.mdp_env import MDPEnv
 from hiive.visualization.mdpviz.transition import Transition
 from hiive.visualization.mdpviz.state import State
@@ -219,6 +220,9 @@ class MDPSpec(object):
 
     def to_env(self):
         return MDPEnv(self)
+
+    def to_discrete_env(self):
+        return MDPDiscreteEnv(self)
 
     def validate(self):
         # For now, just validate by trying to compute the transitions.
