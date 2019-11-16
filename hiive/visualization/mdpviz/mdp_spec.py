@@ -41,12 +41,12 @@ class MDPSpec(object):
             self.states.append(new_state)
         return self._states[name]
 
-    def action(self, name=None):
+    def action(self, name=None, extra_data=None):
         if not name:
             name = 'A%s' % self.num_actions
 
         if name not in self.actions:
-            new_action = Action(name, self.num_actions)
+            new_action = Action(name=name, index=self.num_actions, extra_data=extra_data)
             self._actions[name] = new_action
             self.actions.append(new_action)
         return self._actions[name]
