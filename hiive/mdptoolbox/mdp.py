@@ -1705,7 +1705,8 @@ class SparseQLearning:
         this vector for the default value of N is 100 (N/100).
     """
 
-    def __init__(self, transition_func, reward_func, num_states, num_actions, gamma,
+    def __init__(self, transition_func, reward_func, next_state_func,
+                 num_states, num_actions, gamma,
                  alpha=0.1, alpha_decay=0.99, alpha_min=0.001,
                  epsilon=1.0, epsilon_min=0.1, epsilon_decay=0.99,
                  n_iter=10000, verbose=False):
@@ -1722,6 +1723,8 @@ class SparseQLearning:
         self.P_func = transition_func
 
         self.R_func = reward_func
+
+        self.NA_func = next_state_func
 
         self.alpha = _np.clip(alpha, 0., 1.)
         self.alpha_start = self.alpha
@@ -1754,7 +1757,7 @@ class SparseQLearning:
 
     def _get_Q_argmax_for_s(self, s):
         q_values = [(a, self._get_Q_value(s, a)) for a in range(self.A)]
-        return max(q_values[0], key=lambda q: q[1])
+        return max(q_values, key=lambda q: q[1])[0]
 
     def _get_Q_max(self):
         # max value for each s
@@ -1795,12 +1798,20 @@ class SparseQLearning:
 
             # Simulating next state s_new and reward associated to <s,s_new,a>
             p_s_new = _np.random.random()
-            p = 0
-            s_new = -1
-            while (p < p_s_new) and (s_new < (self.S - 1)):
-                s_new = s_new + 1
-                p = p + self.P_func(a, s, s_new)
 
+            p = 0
+            if self.NA_func is not None:
+                s_new = self.NA_func(s, a)
+                if s_new is not None:
+                    p = self.P_func(a, s, s_new)
+            else:
+                s_new = 0
+                while (p < p_s_new) and (s_new < (self.S - 1)):
+                    s_new = s_new + 1
+                    p = p + self.P_func(a, s, s_new)
+            if s_new is None:
+                s = _np.random.randint(0, self.S)
+                continue
             r = self.R_func(a, s, s_new)
 
             # Q[s, a] = Q[s, a] + alpha*(R + gamma*Max[Q(s’, A)] - Q[s, a])

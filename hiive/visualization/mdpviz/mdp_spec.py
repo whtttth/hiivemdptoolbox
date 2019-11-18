@@ -23,12 +23,30 @@ class MDPSpec(object):
         self.actions = []
         self.state_outcomes: typing.Dict[tuple, typing.List[NextState]] = defaultdict(list)
         self.reward_outcomes: typing.Dict[tuple, typing.List[Reward]] = defaultdict(list)
-        self.discount = 1.0
+        self.gamma = 1.0
         self._node_attribute_dictionary = {}
         self._edge_attribute_dictionary = {}
         self.verbose = verbose
 
-    def state(self, name=None, terminal_state=False):
+    def reset(self):
+        self._node_attribute_dictionary = {}
+        self._edge_attribute_dictionary = {}
+        self._states = {}
+        self._actions = {}
+        self.states = []
+        self.actions = []
+        self.state_outcomes: typing.Dict[tuple, typing.List[NextState]] = defaultdict(list)
+        self.reward_outcomes: typing.Dict[tuple, typing.List[Reward]] = defaultdict(list)
+
+    def has_state(self, state_name):
+        return state_name in self._states
+
+    def get_state(self, state_name):
+        if self.has_state(state_name):
+            return self._states[state_name]
+        return None
+
+    def state(self, name=None, index=None, terminal_state=False):
         if not name:
             if not terminal_state:
                 name = 'S%s' % self.num_states
@@ -36,7 +54,8 @@ class MDPSpec(object):
                 name = 'T%s' % self.num_states
 
         if name not in self.states:
-            new_state = State(name, self.num_states, terminal_state=terminal_state)
+            index = self.num_states if index is None else index
+            new_state = State(name, index=index, terminal_state=terminal_state)
             self._states[name] = new_state
             self.states.append(new_state)
         return self._states[name]
@@ -148,13 +167,15 @@ class MDPSpec(object):
                     color = f'/dark28/{action_color}'
                     if len(next_states) == 1:
                         next_state, _ = list(next_states)[0]
-                        self.set_edge_attributes(u=state, v=next_state, type='state_to_state', color=color, label=action_label)
+                        self.set_edge_attributes(u=state, v=next_state, type='state_to_state', color=color,
+                                                 label=action_label)
                     else:
                         transition = Transition(action, state, t_index)
                         t_index += 1
-                        self.set_edge_attributes(u=state, v=transition, type='state_to_transition', color=color, label=action_label)
+                        self.set_edge_attributes(u=state, v=transition, type='state_to_transition', color=color,
+                                                 label=action_label)
                         # transition_label = f'{state.name, action.name}'
-                        self.set_node_attributes(n=transition, type='transition', # label=transition_label,
+                        self.set_node_attributes(n=transition, type='transition',  # label=transition_label,
                                                  fillcolor='#FFE0FF', style='filled, bold', shape='point')
 
                         for next_state, prob in next_states:
@@ -207,7 +228,6 @@ class MDPSpec(object):
         if self.verbose:
             print()
         """
-
 
         return graph
 

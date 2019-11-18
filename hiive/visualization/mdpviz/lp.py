@@ -23,7 +23,7 @@ import hiive.visualization.mdpviz as mdpviz
 
 class LinearProgramming(object):
     def __init__(self, mdp_spec: mdpviz.MDPSpec):
-        self.discount = mdp_spec.discount
+        self.gamma = mdp_spec.gamma
         self.num_states = mdp_spec.num_states
         self.num_actions = mdp_spec.num_actions
         self.mdp_spec = mdp_spec
@@ -66,7 +66,7 @@ class LinearProgramming(object):
         # TODO: somebody said that q table converges faster than v table
         # Is that true? What if take computation cost into account?
         # TODO: support passing it in as a parameter
-        q_table = self.expected_rewards + self.discount * (
+        q_table = self.expected_rewards + self.gamma * (
             self.next_states * v_vector.reshape((1, 1, self.num_states))).sum(axis=-1)
         return q_table
 
