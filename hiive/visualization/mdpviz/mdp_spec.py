@@ -39,7 +39,7 @@ class MDPSpec(object):
         self.reward_outcomes: typing.Dict[tuple, typing.List[Reward]] = defaultdict(list)
 
     def has_state(self, state_name):
-        return state_name in self._states
+        return state_name in [str(s) for s in self._states]
 
     def get_state(self, state_name):
         if self.has_state(state_name):
@@ -70,11 +70,19 @@ class MDPSpec(object):
             self.actions.append(new_action)
         return self._actions[name]
 
+    def has_transition(self, state, action):
+        outcomes = self.state_outcomes[state, action]
+        states = [o.outcome.name for o in outcomes]
+        if isinstance(state, State):
+            state = state.name
+        return state in states
+
     def transition(self, state: State, action: Action, outcome: Outcome):
         """Specify either a next state or a reward as `outcome` for a transition."""
 
         if isinstance(outcome, NextState):
-            self.state_outcomes[state, action].append(outcome)
+            if not self.has_transition(state, action):
+                self.state_outcomes[state, action].append(outcome)
         elif isinstance(outcome, Reward):
             self.reward_outcomes[state, action].append(outcome)
         else:
@@ -273,9 +281,11 @@ class MDPSpec(object):
 
         """
         assert 0 <= p_default <= 1, "'p_default' must be between 0 and 1"
-        # The transition probability array
+
         n_actions = len(self.actions)
         n_states = len(self.states)
+
+        # The transition probability array
         transition_probabilities = np.zeros((n_actions, n_states, n_states))
         # The reward vector
         rewards = np.zeros((n_states, n_actions))
@@ -303,7 +313,9 @@ class MDPSpec(object):
                         state_next = transition.outcome
                         transition_probabilities[a][s][state_next.index] = transition.weight
                 # transition_probabilities[a, s, ] /= total_transition_weight
-                transition_probabilities[a, s, :] /= np.sum(transition_probabilities[a, s, :])
+                ttp = np.sum(transition_probabilities[a, s, :])
+                if ttp > 0:
+                    transition_probabilities[a, s, :] /= np.sum(transition_probabilities[a, s, :])
             if w > 0:
                 rewards[s, :] /= w
 
