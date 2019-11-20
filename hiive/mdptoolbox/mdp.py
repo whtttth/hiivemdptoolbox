@@ -1577,6 +1577,7 @@ class ValueIteration(MDP):
             # "axis" means the axis along which to operate. In this case it
             # finds the maximum of the the rows. (Operates along the columns?)
             error = _util.getSpan(self.V - Vprev)
+            error_cumulative.append(error)
 
             if len(v_cumulative) == 100:
                 self.v_mean.append(_np.mean(v_cumulative, axis=1))
@@ -1600,6 +1601,7 @@ class ValueIteration(MDP):
                 break
 
         self._endRun()
+
         if len(v_cumulative) > 0:
             self.v_mean.append(_np.mean(v_cumulative, axis=1))
         if len(error_cumulative) > 0:
