@@ -70,19 +70,11 @@ class MDPSpec(object):
             self.actions.append(new_action)
         return self._actions[name]
 
-    def has_transition(self, state, action):
-        outcomes = self.state_outcomes[state, action]
-        states = [o.outcome.name for o in outcomes]
-        if isinstance(state, State):
-            state = state.name
-        return state in states
-
     def transition(self, state: State, action: Action, outcome: Outcome):
         """Specify either a next state or a reward as `outcome` for a transition."""
 
         if isinstance(outcome, NextState):
-            if not self.has_transition(state, action):
-                self.state_outcomes[state, action].append(outcome)
+            self.state_outcomes[state, action].append(outcome)
         elif isinstance(outcome, Reward):
             self.reward_outcomes[state, action].append(outcome)
         else:
@@ -110,8 +102,8 @@ class MDPSpec(object):
         return 'Mdp(states=%s, actions=%s, state_outcomes=%s, reward_outcomes=%s)' % (
             self.states, self.actions, dict(self.state_outcomes), dict(self.reward_outcomes))
 
-    def set_edge_attributes(self, u, v, **kwargs):
-        key = (u, v)
+    def set_edge_attributes(self, u, v, a, **kwargs):
+        key = (u, v, a)
         update_kwargs = {k: v for k, v in kwargs.items() if v is not None}
         if key not in self._edge_attribute_dictionary:
             self._edge_attribute_dictionary[key] = {}
@@ -146,10 +138,11 @@ class MDPSpec(object):
         self._edge_attribute_dictionary = {}
 
         for state in self.states:
-            fillcolor = 'yellow' if highlight_state == state else 'red' if highlight_next_state == state else '#FFFFC0'
+            fillcolor = 'yellow' if highlight_state == state else 'red' if highlight_next_state == state else '#E0E0E0'
             self.set_node_attributes(n=state,
                                      shape='doubleoctagon' if state.terminal_state else 'circle',
                                      label=state.name,
+                                     fontname='consolas',
                                      fillcolor=fillcolor,
                                      style='filled',
                                      type='state')
@@ -162,43 +155,69 @@ class MDPSpec(object):
                 for action in self.actions:
                     reward_probs = transitions.rewards[state, action].items()
                     expected_reward = sum(reward * prob for reward, prob in reward_probs)
-                    stddev_reward = (sum(
-                        reward * reward * prob for reward, prob in
-                        reward_probs) - expected_reward * expected_reward) ** 0.5
 
-                    action_label = '%s %+.2f' % (action.name, expected_reward)
-                    if len(reward_probs) > 1:
-                        action_label += ' (%.2f)' % stddev_reward
+                    action_label = f'{action.name}\n{expected_reward:+.2f})'
 
                     next_states = transitions.next_states[state, action].items()
                     action_color = action.index + 1
-                    color = f'/dark28/{action_color}'
+                    # color = f'/set28/{action_color}'
+                    fontcolor = f'/set19/{action_color}'
+                    color = f'/set19/{action_color}'
                     if len(next_states) == 1:
                         next_state, _ = list(next_states)[0]
-                        self.set_edge_attributes(u=state, v=next_state, type='state_to_state', color=color,
+                        self.set_edge_attributes(u=state, v=next_state, a=action,
+                                                 type='state_to_state',
+                                                 color=color,
+                                                 fontsize=8,
+                                                 decorate=False,
+                                                 fontname='consolas',
+                                                 labelfloat=False,
+                                                 fontcolor=fontcolor,
                                                  label=action_label)
                     else:
                         transition = Transition(action, state, t_index)
                         t_index += 1
-                        self.set_edge_attributes(u=state, v=transition, type='state_to_transition', color=color,
+                        self.set_edge_attributes(u=state, v=transition, a=action,
+                                                 type='state_to_transition',
+                                                 color=color,
+                                                 fontcolor=fontcolor,
+                                                 decorate=False,
+                                                 fontname='consolas',
+                                                 fontsize=8,
+                                                 labelfloat=False,
                                                  label=action_label)
                         # transition_label = f'{state.name, action.name}'
                         self.set_node_attributes(n=transition, type='transition',  # label=transition_label,
-                                                 fillcolor='#FFE0FF', style='filled, bold', shape='point')
-
-                        for next_state, prob in next_states:
+                                                 fillcolor=color,
+                                                 color=color,
+                                                 style='filled, bold', shape='point')
+                        # rewards = [reward for reward, _ in reward_probs]
+                        for i, nsp in enumerate(next_states):
+                            next_state, prob = nsp
                             if not prob:
                                 continue
-                            color = f'/set28/{action_color}'
-                            self.set_edge_attributes(u=transition, v=next_state, label='%3.2f%%' % (prob * 100),
+                            # color = f'/set28/{action_color}'
+                            # color = f'/pastel19/{action_color}'
+                            # fontcolor = f'/set19/{action_color}'
+                            # reward = transition.reward
+                            transition_label = f'{(prob * 100):3.2f}%'  #\n({rewards[i]:+.2f})'
+                            self.set_edge_attributes(u=transition, v=next_state, a=action,
+                                                     label=transition_label,
                                                      color=color,
+                                                     decorate=True,
+                                                     fontname='consolas',
+                                                     fontsize=6.5,
+                                                     labelfloat=False,
+                                                     fontcolor=fontcolor,
                                                      type='transition_to_state')
 
                         if state == highlight_state and action == highlight_action:
                             self.set_node_attributes(n=transition, style='bold')
-                            self.set_edge_attributes(u=transition, v=next_state, style='bold', color='green')
+                            self.set_edge_attributes(u=transition, v=next_state,  a=action,
+                                                     style='bold', color='green')
                             if highlight_next_state:
-                                self.set_edge_attributes(u=transition, v=highlight_next_state, style='bold',
+                                self.set_edge_attributes(u=transition, v=highlight_next_state, a=action,
+                                                         style='bold',
                                                          color='red', data='e4')
                         """
                         else:
@@ -212,17 +231,17 @@ class MDPSpec(object):
         for n, node_attributes in self._node_attribute_dictionary.items():
             graph.add_node(node_for_adding=n, **node_attributes)
             if self.verbose:
-                print(f'Adding node: {n}, nodes={len(graph.node)}')
+                print(f'Adding node: {n}, nodes={len(graph.nodes)}')
         if self.verbose:
             print()
 
         # build edges
         # graph.edge.clear()
         for edge_key, edge_attributes in self._edge_attribute_dictionary.items():
-            u, v = edge_key
+            u, v, _ = edge_key
             graph.add_edge(u_for_edge=u, v_for_edge=v, **edge_attributes)
             if self.verbose:
-                print(f'Adding edge: u={u}, v={v}, edges={len(graph.edge)}, attributes={edge_attributes}')
+                print(f'Adding edge: u={u}, v={v}, edges={len(graph.edges)}, attributes={edge_attributes}')
 
         if self.verbose:
             print()
