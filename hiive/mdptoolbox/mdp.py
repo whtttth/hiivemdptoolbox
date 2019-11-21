@@ -1082,7 +1082,7 @@ class QLearning(MDP):
     def __init__(self, transitions, reward, gamma,
                  alpha=0.1, alpha_decay=0.99, alpha_min=0.001,
                  epsilon=1.0, epsilon_min=0.1, epsilon_decay=0.99,
-                 n_iter=10000, skip_check=False):
+                 n_iter=10000, skip_check=False, iter_callback=None):
         # Initialise a Q-learning MDP.
 
         # The following check won't be done in MDP()'s initialisation, so let's
@@ -1118,6 +1118,7 @@ class QLearning(MDP):
         self.error_mean = []
         self.v_mean = []
         self.p_cumulative = []
+        self.iter_callback = iter_callback
 
     def run(self):
 
@@ -1135,11 +1136,11 @@ class QLearning(MDP):
 
         # initial state choice
         s = _np.random.randint(0, self.S)
-
+        reset_s = False
         for n in range(1, self.max_iter + 1):
 
             # Reinitialisation of trajectories every 100 transitions
-            if (n % 100) == 0:
+            if (self.iter_callback is None and (n % 100) == 0) or reset_s:
                 s = _np.random.randint(0, self.S)
 
             # Action choice : greedy with increasing probability
@@ -1182,8 +1183,6 @@ class QLearning(MDP):
                 self.error_mean.append(_np.mean(error_cumulative))
                 error_cumulative = []
 
-
-
             # compute the value function and the policy
             v = self.Q.max(axis=1)
             v_cumulative.append(v)
@@ -1196,7 +1195,7 @@ class QLearning(MDP):
             p = self.Q.argmax(axis=1)
             self.policy = p
             if len(self.p_cumulative) == 0 or not _np.array_equal(self.policy, self.p_cumulative[-1][1]):
-                self.p_cumulative.append((self.iter, self.policy.copy()))
+                self.p_cumulative.append((n, self.policy.copy()))
             """
             Rewards,errors time at each iteration I think
             But that’s for all of them and steps per episode?
@@ -1205,6 +1204,8 @@ class QLearning(MDP):
             And alpha and epsilon at each iteration?
             """
             self.run_stats.append(self._build_run_stat(s=s, a=a, r=r, p=p, v=v, error=error))
+            if self.iter_callback is not None:
+                reset_s = self.iter_callback(s, a, s_new)
 
             # current state is updated
             s = s_new
