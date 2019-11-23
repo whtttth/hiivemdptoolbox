@@ -64,11 +64,11 @@ import scipy.sparse as _sp
 import hiive.mdptoolbox.util as _util
 
 _MSG_STOP_MAX_ITER = "Iterating stopped due to maximum number of iterations " \
-    "condition."
+                     "condition."
 _MSG_STOP_EPSILON_OPTIMAL_POLICY = "Iterating stopped, epsilon-optimal " \
-    "policy found."
+                                   "policy found."
 _MSG_STOP_EPSILON_OPTIMAL_VALUE = "Iterating stopped, epsilon-optimal value " \
-    "function found."
+                                  "function found."
 _MSG_STOP_UNCHANGING_POLICY = "Iterating stopped, unchanging policy found."
 
 
@@ -94,7 +94,6 @@ def _printVerbosity(iteration, variation):
 
 
 class MDP:
-
     """A Markov Decision Problem.
 
     Let ``S`` = the number of states, and ``A`` = the number of acions.
@@ -234,7 +233,7 @@ class MDP:
         for aa in range(self.A):
             P_repr += repr(self.P[aa]) + "\n"
             R_repr += repr(self.R[aa]) + "\n"
-        return(P_repr + "\n" + R_repr)
+        return (P_repr + "\n" + R_repr)
 
     def _bellmanOperator(self, V=None):
         # Apply the Bellman operator on the value function.
@@ -252,7 +251,7 @@ class MDP:
             # make sure the user supplied V is of the right shape
             try:
                 assert V.shape in ((self.S,), (1, self.S)), "V is not the " \
-                    "right shape (Bellman operator)."
+                                                            "right shape (Bellman operator)."
             except AttributeError:
                 raise TypeError("V must be a numpy array or matrix.")
         # Looping through each action the the Q-value matrix is calculated.
@@ -357,7 +356,6 @@ class MDP:
 
 
 class FiniteHorizon(MDP):
-
     """A MDP solved using the finite-horizon backwards induction algorithm.
 
     Parameters
@@ -455,7 +453,6 @@ class FiniteHorizon(MDP):
 
 
 class _LP(MDP):
-
     """A discounted MDP soloved using linear programming.
 
     This class requires the Python ``cvxopt`` module to be installed.
@@ -556,7 +553,6 @@ class _LP(MDP):
 
 
 class PolicyIteration(MDP):
-
     """A discounted MDP solved using the policy iteration algorithm.
 
     Arguments
@@ -638,7 +634,7 @@ class PolicyIteration(MDP):
             # Make sure it is a numpy array
             policy0 = _np.array(policy0)
             # Make sure the policy is the right size and shape
-            assert policy0.shape in ((self.S, ), (self.S, 1), (1, self.S)), \
+            assert policy0.shape in ((self.S,), (self.S, 1), (1, self.S)), \
                 "'policy0' must a vector with length S."
             # reshape the policy to be a vector
             policy0 = policy0.reshape(self.S)
@@ -742,7 +738,7 @@ class PolicyIteration(MDP):
         # number of iterations reached.
         #
         try:
-            assert V0.shape in ((self.S, ), (self.S, 1), (1, self.S)), \
+            assert V0.shape in ((self.S,), (self.S, 1), (1, self.S)), \
                 "'V0' must be a vector of length S."
             policy_V = _np.array(V0).reshape(self.S)
         except AttributeError:
@@ -835,7 +831,7 @@ class PolicyIteration(MDP):
         v_cumulative = []
 
         self.p_cumulative = []
-
+        run_stats = []
         while True:
             self.iter += 1
             take_run_stat = self.iter % self.run_stat_frequency == 0 or self.iter == self.max_iter
@@ -857,13 +853,16 @@ class PolicyIteration(MDP):
             # value alone
             policy_next, next_v = self._bellmanOperator()
             error = _np.absolute(next_v - policy_V).max()
+            run_stats.append(self._build_run_stat(i=self.iter, s=None, a=None, r=_np.max(policy_V),
+                                                  p=policy_next, v=policy_V, error=error))
+
             if take_run_stat:
                 error_cumulative.append(error)
                 if len(error_cumulative) == 100:
                     self.error_mean.append(_np.mean(error_cumulative))
                     error_cumulative = []
-                self.run_stats.append(self._build_run_stat(i=self.iter, s=None, a=None, r=_np.max(policy_V),
-                                                           p=policy_next, v=policy_V, error=error))
+                self.run_stats.append(run_stats[-1])
+                run_stats = []
             del next_v
             # calculate in how many places does the old policy disagree with
             # the new policy
@@ -892,12 +891,12 @@ class PolicyIteration(MDP):
             self.v_mean.append(_np.mean(v_cumulative, axis=1))
         if len(error_cumulative) > 0:
             self.error_mean.append(_np.mean(error_cumulative))
-
+        if self.run_stats is None or len(self.run_stats) == 0:
+            self.run_stats = run_stats
         return self.run_stats
 
 
 class PolicyIterationModified(PolicyIteration):
-
     """A discounted MDP  solved using a modified policy iteration algorithm.
 
     Arguments
@@ -1010,7 +1009,6 @@ class PolicyIterationModified(PolicyIteration):
 
 
 class QLearning(MDP):
-
     """A discounted MDP solved using the Q learning algorithm.
 
     Parameters
@@ -1142,6 +1140,7 @@ class QLearning(MDP):
         # initial state choice
         s = _np.random.randint(0, self.S)
         reset_s = False
+        run_stats = []
         for n in range(1, self.max_iter + 1):
 
             take_run_stat = n % self.run_stat_frequency == 0 or n == self.max_iter
@@ -1189,6 +1188,8 @@ class QLearning(MDP):
             p = self.Q.argmax(axis=1)
             self.policy = p
 
+            run_stats.append(self._build_run_stat(i=n, s=s, a=a, r=r, p=p, v=v, error=error))
+
             if take_run_stat:
                 error_cumulative.append(error)
 
@@ -1207,11 +1208,12 @@ class QLearning(MDP):
                 """
                 Rewards,errors time at each iteration I think
                 But that’s for all of them and steps per episode?
-    
+
                 Alpha decay and min ?
                 And alpha and epsilon at each iteration?
                 """
-                self.run_stats.append(self._build_run_stat(i=n, s=s, a=a, r=r, p=p, v=v, error=error))
+                self.run_stats.append(run_stats[-1])
+                run_stats = []
 
             if self.iter_callback is not None:
                 reset_s = self.iter_callback(s, a, s_new)
@@ -1233,7 +1235,8 @@ class QLearning(MDP):
             self.v_mean.append(_np.mean(v_cumulative, axis=1))
         if len(error_cumulative) > 0:
             self.error_mean.append(_np.mean(error_cumulative))
-
+        if self.run_stats is None or len(self.run_stats) == 0:
+            self.run_stats = run_stats
         return self.run_stats
 
     def _build_run_stat(self, i, a, error, p, r, s, v):
@@ -1255,7 +1258,6 @@ class QLearning(MDP):
 
 
 class RelativeValueIteration(MDP):
-
     """A MDP solved using the relative value iteration algorithm.
 
     Arguments
@@ -1327,7 +1329,7 @@ class RelativeValueIteration(MDP):
                  skip_check=False):
         # Initialise a relative value iteration MDP.
 
-        MDP.__init__(self,  transitions, reward, None, epsilon, max_iter,
+        MDP.__init__(self, transitions, reward, None, epsilon, max_iter,
                      skip_check=skip_check)
 
         self.epsilon = epsilon
@@ -1373,7 +1375,6 @@ class RelativeValueIteration(MDP):
 
 
 class ValueIteration(MDP):
-
     """A discounted MDP solved using the value iteration algorithm.
 
     Description
@@ -1502,7 +1503,7 @@ class ValueIteration(MDP):
             self.V = _np.zeros(self.S)
         else:
             assert len(initial_value) == self.S, "The initial value must be " \
-                "a vector of length S."
+                                                 "a vector of length S."
             self.V = _np.array(initial_value).reshape(self.S)
         if self.gamma < 1:
             # compute a bound for the number of iterations and update the
@@ -1574,7 +1575,7 @@ class ValueIteration(MDP):
         self.v_mean = []
         self.error_mean = []
         self.p_cumulative = []
-
+        run_stats = []
         while True:
             self.iter += 1
             take_run_stat = self.iter % self.run_stat_frequency == 0 or self.iter == self.max_iter
@@ -1584,11 +1585,12 @@ class ValueIteration(MDP):
             # Bellman Operator: compute policy and value functions
             self.policy, self.V = self._bellmanOperator()
 
-
             # The values, based on Q. For the function "max()": the option
             # "axis" means the axis along which to operate. In this case it
             # finds the maximum of the the rows. (Operates along the columns?)
             error = _util.getSpan(self.V - Vprev)
+            run_stats.append(self._build_run_stat(i=self.iter, s=None, a=None, r=_np.max(self.V),
+                                                           p=self.policy, v=self.V, error=error))
             if take_run_stat:
                 error_cumulative.append(error)
                 if len(self.p_cumulative) == 0 or not _np.array_equal(self.policy, self.p_cumulative[-1][1]):
@@ -1600,8 +1602,8 @@ class ValueIteration(MDP):
                     self.error_mean.append(_np.mean(error_cumulative))
                     error_cumulative = []
 
-                self.run_stats.append(self._build_run_stat(i=self.iter, s=None, a=None, r=_np.max(self.V),
-                                                           p=self.policy, v=self.V, error=error))
+                self.run_stats.append(run_stats[-1])
+                run_stats = []
 
             if self.verbose:
                 _printVerbosity(self.iter, error)
@@ -1617,11 +1619,13 @@ class ValueIteration(MDP):
 
         self._endRun()
 
+        # catch stragglers
         if len(v_cumulative) > 0:
             self.v_mean.append(_np.mean(v_cumulative, axis=1))
         if len(error_cumulative) > 0:
             self.error_mean.append(_np.mean(error_cumulative))
-
+        if self.run_stats is None or len(self.run_stats) == 0:
+            self.run_stats = run_stats
         return self.run_stats
 
     def _build_run_stat(self, i, s, a, r, p, v, error):
@@ -1643,7 +1647,6 @@ class ValueIteration(MDP):
 
 
 class ValueIterationGS(ValueIteration):
-
     """
     A discounted MDP solved using the value iteration Gauss-Seidel algorithm.
 
