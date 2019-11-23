@@ -46,16 +46,15 @@ class MDPSpec(object):
             return self._states[state_name]
         return None
 
-    def state(self, name=None, index=None, terminal_state=False):
+    def state(self, name=None, index=None, terminal_state=False, extra_data=None):
         if not name:
             if not terminal_state:
                 name = 'S%s' % self.num_states
             else:
                 name = 'T%s' % self.num_states
-
         if name not in self.states:
             index = self.num_states if index is None else index
-            new_state = State(name, index=index, terminal_state=terminal_state)
+            new_state = State(name, index=index, terminal_state=terminal_state, extra_data=extra_data)
             self._states[name] = new_state
             self.states.append(new_state)
         return self._states[name]
@@ -156,7 +155,7 @@ class MDPSpec(object):
                     reward_probs = transitions.rewards[state, action].items()
                     expected_reward = sum(reward * prob for reward, prob in reward_probs)
 
-                    action_label = f'{action.name}\n{expected_reward:+.2f})'
+                    action_label = f'{action.name}\n({expected_reward:+.2f})'
 
                     next_states = transitions.next_states[state, action].items()
                     action_color = action.index + 1
@@ -204,7 +203,7 @@ class MDPSpec(object):
                             self.set_edge_attributes(u=transition, v=next_state, a=action,
                                                      label=transition_label,
                                                      color=color,
-                                                     decorate=True,
+                                                     decorate=False,
                                                      fontname='consolas',
                                                      fontsize=6.5,
                                                      labelfloat=False,

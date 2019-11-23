@@ -652,6 +652,7 @@ class PolicyIteration(MDP):
         self.error_mean = []
         self.v_mean = []
         self.p_cumulative = []
+        self.run_stat_frequency = max(1, max_iter // 10000)
 
         # Do some setup depending on the evaluation type
         if eval_type in (0, "matrix"):
@@ -806,7 +807,7 @@ class PolicyIteration(MDP):
         self.V = policy_V
         return policy_V, Rpolicy, None
 
-    def _build_run_stat(self, s, a, r, p, v, error):
+    def _build_run_stat(self, i, s, a, r, p, v, error):
         run_stat = {
             'State': s,
             'Action': a,
@@ -815,6 +816,7 @@ class PolicyIteration(MDP):
             'Time': _time.time() - self.time,
             'Max V': _np.max(v),
             'Mean V': _np.mean(v),
+            'Iteration': i,
             # 'Value': v.copy(),
             # 'Policy': p.copy()
         }
@@ -835,29 +837,32 @@ class PolicyIteration(MDP):
 
         while True:
             self.iter += 1
+            take_run_stat = self.iter % self.run_stat_frequency == 0 or self.iter == self.max_iter
             # these _evalPolicy* functions will update the classes value
             # attribute
             policy_V, policy_R, itr = (self._evalPolicyMatrix()
                                        if self.eval_type == 'matrix'
                                        else self._evalPolicyIterative())
 
-            v_cumulative.append(policy_V)
-            if len(self.p_cumulative) == 0 or not _np.array_equal(self.policy, self.p_cumulative[-1][1]):
-                self.p_cumulative.append((self.iter, self.policy.copy()))
+            if take_run_stat:
+                v_cumulative.append(policy_V)
+                if len(v_cumulative) == 100:
+                    self.v_mean.append(_np.mean(v_cumulative, axis=1))
+                    v_cumulative = []
+                if len(self.p_cumulative) == 0 or not _np.array_equal(self.policy, self.p_cumulative[-1][1]):
+                    self.p_cumulative.append((self.iter, self.policy.copy()))
 
             # This should update the classes policy attribute but leave the
             # value alone
             policy_next, next_v = self._bellmanOperator()
             error = _np.absolute(next_v - policy_V).max()
-            error_cumulative.append(error)
-
-            if len(v_cumulative) == 100:
-                self.v_mean.append(_np.mean(v_cumulative, axis=1))
-                v_cumulative = []
-            if len(error_cumulative) == 100:
-                self.error_mean.append(_np.mean(error_cumulative))
-                error_cumulative = []
-
+            if take_run_stat:
+                error_cumulative.append(error)
+                if len(error_cumulative) == 100:
+                    self.error_mean.append(_np.mean(error_cumulative))
+                    error_cumulative = []
+                self.run_stats.append(self._build_run_stat(i=self.iter, s=None, a=None, r=_np.max(policy_V),
+                                                           p=policy_next, v=policy_V, error=error))
             del next_v
             # calculate in how many places does the old policy disagree with
             # the new policy
@@ -869,9 +874,6 @@ class PolicyIteration(MDP):
             # of iterations has been reached then stop
 
             # Error, rewards, and time for every iteration and number of PI steps which might be specific to my setup
-            self.run_stats.append(self._build_run_stat(s=None, a=None, r=_np.max(policy_V),
-                                                       p=policy_next, v=policy_V, error=error))
-
             if nd == 0:
                 if self.verbose:
                     print(_MSG_STOP_UNCHANGING_POLICY)
@@ -1119,6 +1121,7 @@ class QLearning(MDP):
         self.v_mean = []
         self.p_cumulative = []
         self.iter_callback = iter_callback
+        self.run_stat_frequency = max(1, self.max_iter // 10000)
 
     def run(self):
 
@@ -1138,6 +1141,8 @@ class QLearning(MDP):
         s = _np.random.randint(0, self.S)
         reset_s = False
         for n in range(1, self.max_iter + 1):
+
+            take_run_stat = n % self.run_stat_frequency == 0 or n == self.max_iter
 
             # Reinitialisation of trajectories every 100 transitions
             if (self.iter_callback is None and (n % 100) == 0) or reset_s:
@@ -1171,39 +1176,41 @@ class QLearning(MDP):
             # Q[s, a] = Q[s, a] + alpha*(R + gamma*Max[Q(s’, A)] - Q[s, a])
             # Updating the value of Q
             dQ = self.alpha * (r + self.gamma * self.Q[s_new, :].max() - self.Q[s, a])
-
             self.Q[s, a] = self.Q[s, a] + dQ
 
-            # Computing and saving maximal values of the Q variation
-            error = _np.absolute(dQ)
-            error_cumulative.append(error)
-
             # Computing means all over maximal Q variations values
-            if len(error_cumulative) == 100:
-                self.error_mean.append(_np.mean(error_cumulative))
-                error_cumulative = []
+            error = _np.absolute(dQ)
 
             # compute the value function and the policy
             v = self.Q.max(axis=1)
-            v_cumulative.append(v)
             self.V = v
-
-            if len(v_cumulative) == 100:
-                self.v_mean.append(_np.mean(v_cumulative, axis=1))
-                v_cumulative = []
-
             p = self.Q.argmax(axis=1)
             self.policy = p
-            if len(self.p_cumulative) == 0 or not _np.array_equal(self.policy, self.p_cumulative[-1][1]):
-                self.p_cumulative.append((n, self.policy.copy()))
-            """
-            Rewards,errors time at each iteration I think
-            But that’s for all of them and steps per episode?
 
-            Alpha decay and min ?
-            And alpha and epsilon at each iteration?
-            """
-            self.run_stats.append(self._build_run_stat(s=s, a=a, r=r, p=p, v=v, error=error))
+            if take_run_stat:
+                error_cumulative.append(error)
+
+                if len(error_cumulative) == 100:
+                    self.error_mean.append(_np.mean(error_cumulative))
+                    error_cumulative = []
+
+                v_cumulative.append(v)
+
+                if len(v_cumulative) == 100:
+                    self.v_mean.append(_np.mean(v_cumulative, axis=1))
+                    v_cumulative = []
+
+                if len(self.p_cumulative) == 0 or not _np.array_equal(self.policy, self.p_cumulative[-1][1]):
+                    self.p_cumulative.append((n, self.policy.copy()))
+                """
+                Rewards,errors time at each iteration I think
+                But that’s for all of them and steps per episode?
+    
+                Alpha decay and min ?
+                And alpha and epsilon at each iteration?
+                """
+                self.run_stats.append(self._build_run_stat(i=n, s=s, a=a, r=r, p=p, v=v, error=error))
+
             if self.iter_callback is not None:
                 reset_s = self.iter_callback(s, a, s_new)
 
@@ -1227,7 +1234,7 @@ class QLearning(MDP):
 
         return self.run_stats
 
-    def _build_run_stat(self, a, error, p, r, s, v):
+    def _build_run_stat(self, i, a, error, p, r, s, v):
         run_stat = {
             'State': s,
             'Action': a,
@@ -1238,6 +1245,7 @@ class QLearning(MDP):
             'Epsilon': self.epsilon,
             'Max V': _np.max(v),
             'Mean V': _np.mean(v),
+            'Iteration': i,
             # 'Value': v.copy(),
             # 'Policy': p.copy()
         }
@@ -1506,6 +1514,7 @@ class ValueIteration(MDP):
         self.v_mean = []
         self.error_mean = []
         self.p_cumulative = []
+        self.run_stat_frequency = max(1, self.max_iter // 10000)
 
     def _boundIter(self, epsilon):
         # Compute a bound for the number of iterations.
@@ -1565,29 +1574,31 @@ class ValueIteration(MDP):
 
         while True:
             self.iter += 1
+            take_run_stat = self.iter % self.run_stat_frequency == 0 or self.iter == self.max_iter
 
             Vprev = self.V.copy()
 
             # Bellman Operator: compute policy and value functions
             self.policy, self.V = self._bellmanOperator()
 
-            if len(self.p_cumulative) == 0 or not _np.array_equal(self.policy, self.p_cumulative[-1][1]):
-                self.p_cumulative.append((self.iter, self.policy.copy()))
 
             # The values, based on Q. For the function "max()": the option
             # "axis" means the axis along which to operate. In this case it
             # finds the maximum of the the rows. (Operates along the columns?)
             error = _util.getSpan(self.V - Vprev)
-            error_cumulative.append(error)
+            if take_run_stat:
+                error_cumulative.append(error)
+                if len(self.p_cumulative) == 0 or not _np.array_equal(self.policy, self.p_cumulative[-1][1]):
+                    self.p_cumulative.append((self.iter, self.policy.copy()))
+                if len(v_cumulative) == 100:
+                    self.v_mean.append(_np.mean(v_cumulative, axis=1))
+                    v_cumulative = []
+                if len(error_cumulative) == 100:
+                    self.error_mean.append(_np.mean(error_cumulative))
+                    error_cumulative = []
 
-            if len(v_cumulative) == 100:
-                self.v_mean.append(_np.mean(v_cumulative, axis=1))
-                v_cumulative = []
-            if len(error_cumulative) == 100:
-                self.error_mean.append(_np.mean(error_cumulative))
-                error_cumulative = []
-
-            self.run_stats.append(self._build_run_stat(s=None, a=None, r=_np.max(self.V), p=self.policy, v=self.V, error=error))
+                self.run_stats.append(self._build_run_stat(i=self.iter, s=None, a=None, r=_np.max(self.V),
+                                                           p=self.policy, v=self.V, error=error))
 
             if self.verbose:
                 _printVerbosity(self.iter, error)
@@ -1610,16 +1621,18 @@ class ValueIteration(MDP):
 
         return self.run_stats
 
-    def _build_run_stat(self, s, a, r, p, v, error):
+    def _build_run_stat(self, i, s, a, r, p, v, error):
         run_stat = {
             'State': None,
             'Action': None,
             'Reward': r,
             'Error': error,
             'Time': _time.time() - self.time,
-            'Epsilon': self.epsilon,
+            # 'Epsilon': self.epsilon,
             'Max V': _np.max(v),
             'Mean V': _np.mean(v),
+            'Iteration': i,
+
             # 'Value': v.copy(),
             # 'Policy': p.copy()
         }
@@ -1758,226 +1771,3 @@ class ValueIterationGS(ValueIteration):
             self.policy.append(int(Q.argmax()))
 
         self._endRun()
-
-
-class SparseQLearning:
-
-    """A discounted MDP solved using the Q learning algorithm.
-
-    Parameters
-    ----------
-    transition_func : func(action, current_state, next_state)
-        Returns transition probability for the requested action/currentstate/next state
-    reward_func : func(action, current_state, next_state)
-        Returns reward for the requested action/currentstate/next state
-    gamma : float
-        Discount factor. See the documentation for the ``MDP`` class for
-        details.
-    n_iter : int, optional
-        Number of iterations to execute. This is ignored unless it is an
-        integer greater than the default value. Defaut: 10,000.
-    skip_check : bool
-        By default we run a check on the ``transitions`` and ``rewards``
-        arguments to make sure they describe a valid MDP. You can set this
-        argument to True in order to skip this check.
-
-    Data Attributes
-    ---------------
-    Q : dict
-        learned Q matrix (SxA)
-    V : tuple
-        learned value function (S).
-    policy : tuple
-        learned optimal policy (S).
-    mean_discrepancy : array
-        Vector of V discrepancy mean over 100 iterations. Then the length of
-        this vector for the default value of N is 100 (N/100).
-    """
-
-    def __init__(self, transition_func, reward_func, next_state_func,
-                 num_states, num_actions, gamma,
-                 alpha=0.1, alpha_decay=0.99, alpha_min=0.001,
-                 epsilon=1.0, epsilon_min=0.1, epsilon_decay=0.99,
-                 n_iter=10000, verbose=False):
-        # Initialise a Sparse Q-learning MDP.
-
-        # The following check won't be done in MDP()'s initialisation, so let's
-        # do it here
-        self.max_iter = int(n_iter)
-        assert self.max_iter >= 10000, "'n_iter' should be greater than 10000."
-        self.verbose = verbose
-
-        # Store P, S, and A
-        self.S, self.A = num_states, num_actions
-        self.P_func = transition_func
-
-        self.R_func = reward_func
-
-        self.NA_func = next_state_func
-
-        self.alpha = _np.clip(alpha, 0., 1.)
-        self.alpha_start = self.alpha
-        self.alpha_decay = _np.clip(alpha_decay, 0., 1.)
-        self.alpha_min = _np.clip(alpha_min, 0., 1.)
-        self.gamma = _np.clip(gamma, 0., 1.)
-        self.epsilon = _np.clip(epsilon, 0., 1.)
-        self.epsilon_start = self.epsilon
-        self.epsilon_decay = _np.clip(epsilon_decay, 0., 1.)
-        self.epsilon_min = _np.clip(epsilon_min, 0., 1.)
-        self.V = None
-        self.policy = None
-        # Initialisations
-        self.Q = {}
-        self.mean_discrepancy = []
-        self.run_stats = []
-
-    def _get_Q_value(self, s, a):
-        sa = (s, a)
-        if sa in self.Q:
-            return self.Q[sa]
-        return 0.0
-
-    def _set_Q_value(self, s, a, q_value):
-        sa = (s, a)
-        self.Q[sa] = q_value
-
-    def _get_Q_max_for_s(self, s):
-        return max([self._get_Q_value(s, a) for a in range(self.A)])
-
-    def _get_Q_argmax_for_s(self, s):
-        q_values = [(a, self._get_Q_value(s, a)) for a in range(self.A)]
-        return max(q_values, key=lambda q: q[1])[0]
-
-    def _get_Q_max(self):
-        # max value for each s
-        states = [s for (s, a) in self.Q]
-        return _np.array([self._get_Q_max_for_s(s) for s in states])
-
-    def _get_Q_argmax(self):
-        # best action for each s
-        states = [s for (s, a) in self.Q]
-        return _np.array([self._get_Q_argmax_for_s(s) for s in states])
-
-    def run(self):
-
-        # Run the Q-learning algorithm.
-        discrepancy = []
-        self.run_stats = []
-        self.mean_discrepancy = []
-
-        self.time = _time.time()
-
-        # initial state choice
-        s = _np.random.randint(0, self.S)
-
-        for n in range(1, self.max_iter + 1):
-
-            # Reinitialisation of trajectories every 100 transitions
-            if (n % 100) == 0:
-                s = _np.random.randint(0, self.S)
-
-            # Action choice : greedy with increasing probability
-            # The agent takes random actions for probability ε and greedy action for probability (1-ε).
-            pn = _np.random.random()
-            if pn < self.epsilon:
-                a = _np.random.randint(0, self.A)
-            else:
-                # optimal_action = self.Q[s, :].max()
-                a = self._get_Q_argmax_for_s(s)  # self.Q[s, :].argmax()
-
-            # Simulating next state s_new and reward associated to <s,s_new,a>
-            p_s_new = _np.random.random()
-
-            p = 0
-            if self.NA_func is not None:
-                s_new = self.NA_func(s, a)
-                if s_new is not None:
-                    p = self.P_func(a, s, s_new)
-            else:
-                s_new = 0
-                while (p < p_s_new) and (s_new < (self.S - 1)):
-                    s_new = s_new + 1
-                    p = p + self.P_func(a, s, s_new)
-            if s_new is None:
-                s = _np.random.randint(0, self.S)
-                continue
-            r = self.R_func(a, s, s_new)
-
-            # Q[s, a] = Q[s, a] + alpha*(R + gamma*Max[Q(s’, A)] - Q[s, a])
-            # Updating the value of Q
-            # dQ = self.alpha * (r + self.gamma * self.Q[s_new, :].max() - self.Q[s, a])
-            q_sa = self._get_Q_value(s, a)
-            dQ = self.alpha * (r + self.gamma * self._get_Q_max_for_s(s_new) - q_sa)
-
-            self._set_Q_value(s, a, q_sa + dQ)
-
-            # Computing and saving maximal values of the Q variation
-            error = _np.absolute(dQ)
-            discrepancy.append(error)
-
-            # Computing means all over maximal Q variations values
-            if len(discrepancy) == 100:
-                self.mean_discrepancy.append(_np.mean(discrepancy))
-                discrepancy = []
-
-            # compute the value function and the policy
-
-            v = self._get_Q_max()
-            self.V = v
-            p = self._get_Q_argmax()
-            self.policy = p
-
-            """
-            Rewards,errors time at each iteration I think
-            But that’s for all of them and steps per episode?
-
-            Alpha decay and min ?
-            And alpha and epsilon at each iteration?
-            """
-            self.run_stats.append(self._build_run_stat(s=s, a=a, r=r, p=p, v=v, error=error))
-
-            # current state is updated
-            s = s_new
-
-            self.alpha *= self.alpha_decay
-            if self.alpha < self.alpha_min:
-                self.alpha = self.alpha_min
-
-            self.epsilon *= self.epsilon_decay
-            if self.epsilon < self.epsilon_min:
-                self.epsilon = self.epsilon_min
-
-        self._endRun()
-        return self.run_stats
-
-    def _startRun(self):
-        if self.verbose:
-            _printVerbosity('Iteration', 'Variation')
-
-        self.time = _time.time()
-
-    def _endRun(self):
-        # store value and policy as tuples
-        self.V = tuple(self.V.tolist())
-
-        try:
-            self.policy = tuple(self.policy.tolist())
-        except AttributeError:
-            self.policy = tuple(self.policy)
-
-        self.time = _time.time() - self.time
-
-    def _build_run_stat(self, a, error, p, r, s, v):
-        run_stat = {
-            'State': s,
-            'Action': a,
-            'Reward': r,
-            'Error': error,
-            'Time': _time.time() - self.time,
-            'Alpha': self.alpha,
-            'Epsilon': self.epsilon,
-            'Max V': _np.max(v),
-            'Value': v.copy(),
-            'Policy': p.copy()
-        }
-        return run_stat
