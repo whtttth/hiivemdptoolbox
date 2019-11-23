@@ -618,7 +618,8 @@ class PolicyIteration(MDP):
     """
 
     def __init__(self, transitions, reward, gamma, policy0=None,
-                 max_iter=1000, eval_type=0, skip_check=False):
+                 max_iter=1000, eval_type=0, skip_check=False,
+                 run_stat_frequency=None):
         # Initialise a policy iteration MDP.
         #
         # Set up the MDP, but don't need to worry about epsilon values
@@ -652,7 +653,7 @@ class PolicyIteration(MDP):
         self.error_mean = []
         self.v_mean = []
         self.p_cumulative = []
-        self.run_stat_frequency = max(1, max_iter // 10000)
+        self.run_stat_frequency = max(1, max_iter // 10000) if run_stat_frequency is None else run_stat_frequency
 
         # Do some setup depending on the evaluation type
         if eval_type in (0, "matrix"):
@@ -1084,7 +1085,8 @@ class QLearning(MDP):
     def __init__(self, transitions, reward, gamma,
                  alpha=0.1, alpha_decay=0.99, alpha_min=0.001,
                  epsilon=1.0, epsilon_min=0.1, epsilon_decay=0.99,
-                 n_iter=10000, skip_check=False, iter_callback=None):
+                 n_iter=10000, skip_check=False, iter_callback=None,
+                 run_stat_frequency=None):
         # Initialise a Q-learning MDP.
 
         # The following check won't be done in MDP()'s initialisation, so let's
@@ -1121,7 +1123,7 @@ class QLearning(MDP):
         self.v_mean = []
         self.p_cumulative = []
         self.iter_callback = iter_callback
-        self.run_stat_frequency = max(1, self.max_iter // 10000)
+        self.run_stat_frequency = max(1, self.max_iter // 10000) if run_stat_frequency is None else run_stat_frequency
 
     def run(self):
 
@@ -1488,7 +1490,8 @@ class ValueIteration(MDP):
     """
 
     def __init__(self, transitions, reward, gamma, epsilon=0.01,
-                 max_iter=1000, initial_value=0, skip_check=False):
+                 max_iter=1000, initial_value=0, skip_check=False,
+                 run_stat_frequency=None):
         # Initialise a value iteration MDP.
 
         MDP.__init__(self, transitions, reward, gamma, epsilon, max_iter,
@@ -1514,7 +1517,7 @@ class ValueIteration(MDP):
         self.v_mean = []
         self.error_mean = []
         self.p_cumulative = []
-        self.run_stat_frequency = max(1, self.max_iter // 10000)
+        self.run_stat_frequency = max(1, self.max_iter // 10000) if run_stat_frequency is None else run_stat_frequency
 
     def _boundIter(self, epsilon):
         # Compute a bound for the number of iterations.
